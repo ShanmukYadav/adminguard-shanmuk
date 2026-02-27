@@ -3,199 +3,274 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AdmitGuard - Compliance & Validation System</title>
+    <title>AdmitGuard - Institutional Compliance Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-blue: #2563eb;
-            --bg-gray: #f8fafc;
+            --primary-blue: #1d4ed8; 
+            --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
             --text-dark: #1e293b;
-            --border-color: #e2e8f0;
-            --error-red: #dc2626;
-            --warning-yellow: #facc15;
-            --success-green: #16a34a;
+            --border: #e2e8f0; 
+            --error: #ef4444; 
+            --warning: #f59e0b; 
+            --success: #10b981;
+            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-gray);
-            color: var(--text-dark);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-        }
+        * { box-sizing: border-box; transition: all 0.2s ease-in-out; }
 
-        .card {
-            background: white;
-            padding: 16px; /* [cite: 138] */
-            border-radius: 8px;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-            width: 100%;
-            max-width: 600px;
-            border-top: 4px solid var(--primary-blue); /* [cite: 139] */
-        }
+        body { font-family: 'Inter', sans-serif; background: var(--bg-gradient); color: var(--text-dark); margin: 0; min-height: 100vh; }
 
-        h2 { margin-top: 0; color: var(--primary-blue); font-size: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
+        nav { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); display: flex; justify-content: center; gap: 2rem; padding: 1rem 0; position: sticky; top: 0; z-index: 1000; }
+        .tab-btn { background: none; border: none; font-weight: 600; color: #64748b; cursor: pointer; padding: 0.6rem 1.2rem; border-radius: 8px; font-size: 0.9rem; }
+        .tab-btn.active { background: var(--primary-blue); color: white; box-shadow: 0 4px 6px rgba(29, 78, 216, 0.2); }
 
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .form-group { display: flex; flex-direction: column; margin-bottom: 10px; }
-        .form-group.full-width { grid-column: span 2; }
+        .container { max-width: 1000px; margin: 2rem auto; padding: 0 1rem; }
+        .view { display: none; animation: fadeIn 0.4s ease; }
+        .view.active { display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Dashboard Stats */
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2rem; }
+        .stat-card { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: var(--shadow); border-top: 4px solid var(--primary-blue); text-align: center; }
+        .stat-value { font-size: 2.5rem; font-weight: 700; display: block; margin-bottom: 0.2rem; }
+        .stat-label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Form Styling */
+        .card { background: white; padding: 2rem; border-radius: 16px; box-shadow: var(--shadow); }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+        .full-width { grid-column: span 2; }
+        .form-group { display: flex; flex-direction: column; position: relative; }
+        label { font-weight: 600; font-size: 0.85rem; margin-bottom: 0.4rem; color: #475569; }
+        input, select, textarea { padding: 0.8rem; border: 2px solid var(--border); border-radius: 8px; font-size: 0.95rem; background: #fcfdfe; }
         
-        label { font-weight: 600; font-size: 0.85rem; margin-bottom: 5px; }
-        input, select, textarea { padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.9rem; transition: border-color 0.2s; }
+        /* Validation State Colors */
+        input.strict-err { border-color: var(--error) !important; background-color: #fff1f2; }
+        input.soft-err { border-color: var(--warning) !important; background-color: #fffbeb; }
+        .err-msg { font-size: 0.75rem; font-weight: 600; margin-top: 4px; display: none; }
+        .strict-msg { color: var(--error); }
+        .soft-msg { color: #b45309; }
 
-        input.invalid { border-color: var(--error-red); background-color: #fffafb; }
+        input:focus { border-color: var(--primary-blue); outline: none; box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.1); }
 
-        .warning-box { background-color: #fefce8; border: 1px solid var(--warning-yellow); color: #854d0e; padding: 10px; border-radius: 4px; font-size: 0.85rem; margin-top: 10px; display: none; }
-        .exception-section { display: none; margin-top: 15px; padding: 12px; background: #f8fafc; border-left: 4px solid var(--warning-yellow); }
-        .manager-flag { color: #b91c1c; font-weight: bold; font-size: 0.75rem; margin-top: 5px; display: none; }
-        .success-banner { background-color: #dcfce7; color: var(--success-green); padding: 10px; border-radius: 4px; text-align: center; margin-bottom: 15px; display: none; font-weight: bold; }
+        .banner { padding: 1rem; border-radius: 8px; font-weight: 600; margin-bottom: 1rem; display: none; text-align: center; font-size: 0.9rem; }
+        .banner-error { background: #fee2e2; color: var(--error); border: 1px solid #fecaca; }
+        .banner-warning { background: #fffbeb; color: #92400e; border: 1px solid #fef3c7; }
+        .banner-success { background: #f0fdf4; color: var(--success); border: 1px solid #bbf7d0; }
 
-        .toggle-group { display: flex; align-items: center; gap: 10px; padding: 10px; background: #eff6ff; border-radius: 4px; }
-        button { background-color: var(--primary-blue); color: white; border: none; padding: 12px; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 15px; width: 100%; }
-        button:disabled { background-color: #94a3b8; cursor: not-allowed; }
+        .audit-item { background: white; margin-bottom: 0.8rem; border-radius: 10px; border: 1px solid var(--border); overflow: hidden; }
+        .audit-header { padding: 1.2rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .audit-header:hover { background: #f8fafc; }
+        .audit-details { display: none; padding: 1.5rem; background: #f1f5f9; grid-template-columns: repeat(3, 1fr); gap: 1rem; border-top: 1px solid var(--border); font-size: 0.85rem; }
+        .pill { padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
+        .pill-flag { background: #fee2e2; color: var(--error); }
+        .pill-clean { background: #dcfce7; color: var(--success); }
 
-        /* Audit View [cite: 66-67] */
-        .audit-trail { margin-top: 30px; border-top: 2px dashed var(--border-color); padding-top: 15px; }
-        .audit-trail h3 { font-size: 0.9rem; color: #64748b; margin-top: 0; }
-        .audit-item { font-size: 0.75rem; background: #f1f5f9; padding: 8px; margin-bottom: 5px; border-radius: 4px; }
+        button.main-submit { background: var(--primary-blue); color: white; border: none; padding: 1rem; border-radius: 8px; font-weight: 700; font-size: 1rem; width: 100%; cursor: pointer; margin-top: 1.5rem; box-shadow: 0 4px 6px rgba(29, 78, 216, 0.2); }
+        button:disabled { background: #cbd5e1; cursor: not-allowed; box-shadow: none; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <div id="successBanner" class="success-banner">Application Successfully Submitted</div>
-    <h2>AdmitGuard Admission Form</h2>
-    <form id="admissionForm">
-        <div class="form-grid">
-            <div class="form-group full-width"><label for="fullName">Full Name</label><input type="text" id="fullName" placeholder="Enter full name"></div>
-            <div class="form-group"><label for="email">Email Address</label><input type="email" id="email" placeholder="example@email.com"></div>
-            <div class="form-group"><label for="phone">Phone Number</label><input type="number" id="phone" placeholder="10-digit number"></div>
-            <div class="form-group"><label for="aadhaar">Aadhaar Number</label><input type="number" id="aadhaar" placeholder="12-digit number"></div>
-            <div class="form-group">
-                <label for="qualification">Highest Qualification</label>
-                <select id="qualification">
-                    <option value="">Select Qualification</option>
-                    <option value="B.Tech">B.Tech</option><option value="M.Tech">M.Tech</option><option value="PhD">PhD</option><option value="Other">Other</option>
-                </select>
-            </div>
-            <div class="form-group"><label for="age">Age</label><input type="number" id="age" placeholder="Age"></div>
-            <div class="form-group"><label for="gradYear">Graduation Year</label><input type="number" id="gradYear" placeholder="YYYY"></div>
-            <div class="form-group"><label for="score">Academic Score</label><input type="number" step="0.01" id="score" placeholder="% or CGPA"></div>
-            <div class="form-group"><label for="testScore">Screening Test Score</label><input type="number" id="testScore" placeholder="0-100"></div>
-            <div class="form-group">
-                <label for="interviewStatus">Interview Status</label>
-                <select id="interviewStatus"><option value="Pending">Pending</option><option value="Cleared">Cleared</option><option value="Rejected">Rejected</option></select>
-            </div>
-            <div class="form-group full-width"><div class="toggle-group"><input type="checkbox" id="offerLetter" disabled><label for="offerLetter">Offer Letter Issued</label></div></div>
+<nav>
+    <button class="tab-btn active" onclick="switchTab('dashboard')">Compliance Dashboard</button>
+    <button class="tab-btn" onclick="switchTab('form')">New Application</button>
+    <button class="tab-btn" onclick="switchTab('audit')">Audit Logs</button>
+</nav>
+
+<div class="container">
+    <div id="dashboard" class="view active">
+        <div class="stats-grid">
+            <div class="stat-card"><span class="stat-value" id="stat-total">0</span><span class="stat-label">Total Entries</span></div>
+            <div class="stat-card"><span class="stat-value" id="stat-flagged">0</span><span class="stat-label">Manager Flags</span></div>
+            <div class="stat-card"><span class="stat-value" id="stat-rate">0%</span><span class="stat-label">Exception Rate</span></div>
         </div>
+        <div class="card" style="text-align: center; color: #64748b;"><p>Review key institutional metrics above or start a new screening below.</p></div>
+    </div>
 
-        <div id="warningBox" class="warning-box">⚠ Soft Eligibility Criteria Not Met</div>
-        <div id="exceptionSection" class="exception-section">
-            <div class="toggle-group" style="background:transparent; padding:0; margin-bottom:10px;"><input type="checkbox" id="requestException"><label for="requestException"><strong>Request Exception</strong></label></div>
-            <label for="rationale">Rationale for Exception (min 30 chars + keywords)</label>
-            <textarea id="rationale" rows="2" placeholder="e.g. Approved by Dean..."></textarea>
-            <div id="managerFlag" class="manager-flag">⚠ Flagged for Manager Review</div>
+    <div id="form" class="view">
+        <div id="successBanner" class="banner banner-success">✅ Application Verified and Logged</div>
+        <div id="errorBanner" class="banner banner-error">❌ CRITICAL: Rejected candidates cannot proceed.</div>
+        
+        <div class="card">
+            <form id="admissionForm">
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label>Full Name</label>
+                        <input type="text" id="fullName" placeholder="Min 2 characters">
+                        <span id="err-fullName" class="err-msg strict-msg">⚠ Invalid Name: No numbers, min 2 chars.</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="text" id="email" placeholder="example@domain.com">
+                        <span id="err-email" class="err-msg strict-msg">⚠ Invalid Email: Missing '@' or domain.</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Phone</label>
+                        <input type="number" id="phone" placeholder="10 digits (starts 6-9)">
+                        <span id="err-phone" class="err-msg strict-msg">⚠ Must be 10 digits starting with 6-9.</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Aadhaar</label>
+                        <input type="number" id="aadhaar" placeholder="12 digits">
+                        <span id="err-aadhaar" class="err-msg strict-msg">⚠ Must be exactly 12 digits.</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Qualification</label>
+                        <select id="qualification">
+                            <option value="">Select...</option>
+                            <option>B.Tech</option><option>M.Tech</option><option>BCA</option><option>MCA</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Age</label>
+                        <input type="number" id="age" placeholder="Target: 18-35">
+                        <span id="err-age" class="err-msg soft-msg">⚠ Policy Warning: Target age is 18-35.</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Grad Year</label>
+                        <input type="number" id="gradYear" placeholder="Target: 2015-2025">
+                        <span id="err-gradYear" class="err-msg soft-msg">⚠ Policy Warning: Target 2015-2025.</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Score (% or CGPA)</label>
+                        <input type="number" step="0.01" id="score" placeholder="Target: >=60% / 6.0">
+                        <span id="err-score" class="err-msg soft-msg">⚠ Policy Warning: Below 60% or 6.0 CGPA.</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Screening Test</label>
+                        <input type="number" id="testScore" placeholder="Target: >=40">
+                        <span id="err-testScore" class="err-msg soft-msg">⚠ Policy Warning: Score below 40.</span>
+                    </div>
+                    <div class="form-group full-width">
+                        <label>Interview Outcome</label>
+                        <select id="interviewStatus">
+                            <option value="Pending">Pending Review</option>
+                            <option value="Cleared">Cleared</option>
+                            <option value="Rejected">Rejected</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="exceptionArea" style="display:none; margin-top:1.5rem; padding:1.5rem; background:#fffbeb; border-radius:12px; border: 1px solid #fef3c7;">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="requestException" style="width: 18px; height: 18px;"> 
+                        <span>Request Exception Override</span>
+                    </label>
+                    <textarea id="rationale" rows="2" style="margin-top:1rem; width: 100%;" placeholder="Rationale (30 chars + keywords: 'approved by', 'special case', 'waiver granted')"></textarea>
+                    <span id="err-rationale" class="err-msg strict-msg">⚠ Insufficient rationale or missing institutional keywords.</span>
+                </div>
+
+                <div id="managerFlag" class="banner banner-error" style="margin-top: 1rem;">⚠️ HIGH EXCEPTION COUNT: Flagged for Manager Review.</div>
+
+                <button type="button" class="main-submit" id="submitBtn" disabled>Verify and Submit Application</button>
+            </form>
         </div>
+    </div>
 
-        <button type="button" id="submitBtn">Submit Application</button>
-    </form>
-
-    <div class="audit-trail" id="auditTrail">
-        <h3>Recent Activity Log (Local Only)</h3>
-        <div id="auditLog"></div>
+    <div id="audit" class="view">
+        <div id="auditContainer"></div>
     </div>
 </div>
 
 <script>
-    // Configurable Rules Engine [cite: 64-65, 198]
-    const APP_CONFIG = {
-        strict: { minNameLen: 2, phoneStart: /[6-9]/, phoneLen: 10, aadhaarLen: 12 },
-        soft: { minAge: 18, maxAge: 35, startYear: 2015, endYear: 2025, minScore: 60, minTest: 40 },
-        rationale: { minLen: 30, keywords: ["approved by", "special case", "documentation pending", "waiver granted"] }
+    const CONFIG = {
+        strict: { phone: /^[6-9]\d{9}$/, email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, aadhaarLen: 12 },
+        soft: { minAge: 18, maxAge: 35, start: 2015, end: 2025, minPct: 60, minCGPA: 6.0, minTest: 40 },
+        keywords: ["approved by", "special case", "documentation pending", "waiver granted"]
     };
 
-    const form = document.getElementById('admissionForm');
-    const submitBtn = document.getElementById('submitBtn');
-    const auditLogDiv = document.getElementById('auditLog');
-
-    document.querySelectorAll('input[type="number"]').forEach(input => {
-        input.addEventListener('keydown', (e) => { if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault(); });
-    });
-
-    function validateForm() {
-        let strictPass = true;
-        let softViolations = 0;
-
-        // Strict Checks [cite: 71-79]
-        const nameVal = document.getElementById('fullName').value;
-        const phoneVal = document.getElementById('phone').value;
-        const aadhaarVal = document.getElementById('aadhaar').value;
-        const emailVal = document.getElementById('email').value;
-
-        strictPass = nameVal.length >= APP_CONFIG.strict.minNameLen && 
-                     /^[6-9]\d{9}$/.test(phoneVal) && 
-                     aadhaarVal.length === APP_CONFIG.strict.aadhaarLen &&
-                     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal) &&
-                     document.getElementById('interviewStatus').value !== 'Rejected';
-
-        // Soft Checks [cite: 81-84]
-        const age = document.getElementById('age').value;
-        const grad = document.getElementById('gradYear').value;
-        const score = document.getElementById('score').value;
-        const test = document.getElementById('testScore').value;
-
-        if (age && (age < APP_CONFIG.soft.minAge || age > APP_CONFIG.soft.maxAge)) softViolations++;
-        if (grad && (grad < APP_CONFIG.soft.startYear || grad > APP_CONFIG.soft.endYear)) softViolations++;
-        if (score && score < APP_CONFIG.soft.minScore && score < 6.0) softViolations++;
-        if (test && test < APP_CONFIG.soft.minTest) softViolations++;
-
-        const exceptionToggle = document.getElementById('requestException');
-        const rationale = document.getElementById('rationale').value;
-        const hasKeyword = APP_CONFIG.rationale.keywords.some(k => rationale.toLowerCase().includes(k));
-        const isRationaleValid = rationale.length >= APP_CONFIG.rationale.minLen && hasKeyword;
-
-        if (softViolations > 0) {
-            document.getElementById('warningBox').style.display = 'block';
-            document.getElementById('exceptionSection').style.display = 'block';
-            document.getElementById('managerFlag').style.display = softViolations > 2 ? 'block' : 'none';
-            submitBtn.disabled = !(strictPass && exceptionToggle.checked && isRationaleValid);
-        } else {
-            document.getElementById('warningBox').style.display = 'none';
-            document.getElementById('exceptionSection').style.display = 'none';
-            submitBtn.disabled = !strictPass;
-        }
-
-        document.getElementById('offerLetter').disabled = document.getElementById('interviewStatus').value !== 'Cleared';
+    function switchTab(id) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        document.querySelector(`[onclick="switchTab('${id}')"]`).classList.add('active');
+        if(id !== 'form') loadLogs();
     }
 
-    // Audit Log Persistence [cite: 66-67, 199]
-    submitBtn.onclick = () => {
-        const entry = {
-            name: document.getElementById('fullName').value,
-            time: new Date().toLocaleTimeString(),
-            flagged: document.getElementById('managerFlag').style.display === 'block' ? "YES" : "NO",
-            status: "Submitted"
+    function validate() {
+        const getV = (id) => document.getElementById(id).value;
+        const setUI = (id, type, show) => {
+            const el = document.getElementById(id);
+            const msg = document.getElementById('err-'+id);
+            el.classList.toggle(type + '-err', show);
+            if(msg) msg.style.display = show ? 'block' : 'none';
         };
-        const logs = JSON.parse(localStorage.getItem('admitGuardLogs') || '[]');
-        logs.unshift(entry);
-        localStorage.setItem('admitGuardLogs', JSON.stringify(logs.slice(0, 3)));
-        
-        document.getElementById('successBanner').style.display = 'block';
-        setTimeout(() => { location.reload(); }, 2000);
-    };
 
-    function loadAudit() {
-        const logs = JSON.parse(localStorage.getItem('admitGuardLogs') || '[]');
-        auditLogDiv.innerHTML = logs.map(l => `<div class="audit-item"><strong>${l.time}</strong>: ${l.name} | Flagged: ${l.flagged}</div>`).join('');
+        // Strict Rules
+        const nameValid = getV('fullName').length >= 2 && !/\d/.test(getV('fullName'));
+        const emailValid = CONFIG.strict.email.test(getV('email'));
+        const phoneValid = CONFIG.strict.phone.test(getV('phone'));
+        const aadhaarValid = getV('aadhaar').length === 12;
+        const isRejected = getV('interviewStatus') === 'Rejected';
+
+        setUI('fullName', 'strict', !nameValid && getV('fullName') !== "");
+        setUI('email', 'strict', !emailValid && getV('email') !== "");
+        setUI('phone', 'strict', !phoneValid && getV('phone') !== "");
+        setUI('aadhaar', 'strict', !aadhaarValid && getV('aadhaar') !== "");
+        document.getElementById('errorBanner').style.display = isRejected ? 'block' : 'none';
+
+        // Soft Rules
+        let softViolations = 0;
+        const vAge = getV('age') !== "" && (getV('age') < CONFIG.soft.minAge || getV('age') > CONFIG.soft.maxAge);
+        const vGy = getV('gradYear') !== "" && (getV('gradYear') < CONFIG.soft.start || getV('gradYear') > CONFIG.soft.end);
+        const vSc = getV('score') !== "" && (getV('score') < CONFIG.soft.minPct && getV('score') < CONFIG.soft.minCGPA);
+        const vTs = getV('testScore') !== "" && getV('testScore') < CONFIG.soft.minTest;
+
+        setUI('age', 'soft', vAge); if(vAge) softViolations++;
+        setUI('gradYear', 'soft', vGy); if(vGy) softViolations++;
+        setUI('score', 'soft', vSc); if(vSc) softViolations++;
+        setUI('testScore', 'soft', vTs); if(vTs) softViolations++;
+
+        document.getElementById('exceptionArea').style.display = softViolations > 0 ? 'block' : 'none';
+        document.getElementById('managerFlag').style.display = softViolations > 2 ? 'block' : 'none';
+
+        // Rationale
+        const rat = getV('rationale');
+        const ratValid = rat.length >= 30 && CONFIG.keywords.some(k => rat.toLowerCase().includes(k));
+        setUI('rationale', 'strict', softViolations > 0 && !ratValid && rat !== "");
+
+        const canSubmit = nameValid && emailValid && phoneValid && aadhaarValid && !isRejected && 
+                          (softViolations === 0 || (document.getElementById('requestException').checked && ratValid));
+        
+        document.getElementById('submitBtn').disabled = !canSubmit;
     }
 
-    form.addEventListener('input', validateForm);
-    document.getElementById('interviewStatus').onchange = validateForm;
-    loadAudit();
-    validateForm();
+    document.getElementById('submitBtn').onclick = () => {
+        const entry = {
+            id: Date.now(), name: document.getElementById('fullName').value, time: new Date().toLocaleString(),
+            violations: document.querySelectorAll('.soft-err').length > 0, flagged: document.getElementById('managerFlag').style.display === 'block',
+            fields: { Email: document.getElementById('email').value, Phone: document.getElementById('phone').value, Qual: document.getElementById('qualification').value, Age: document.getElementById('age').value, Status: document.getElementById('interviewStatus').value, Rationale: document.getElementById('rationale').value || "None" }
+        };
+        const logs = JSON.parse(localStorage.getItem('admitLogs') || '[]');
+        logs.unshift(entry);
+        localStorage.setItem('admitLogs', JSON.stringify(logs));
+        document.getElementById('successBanner').style.display = 'block';
+        setTimeout(() => location.reload(), 1200);
+    };
+
+    function loadLogs() {
+        const logs = JSON.parse(localStorage.getItem('admitLogs') || '[]');
+        document.getElementById('stat-total').innerText = logs.length;
+        document.getElementById('stat-flagged').innerText = logs.filter(l => l.flagged).length;
+        const rate = logs.length ? (logs.filter(l => l.violations).length / logs.length * 100).toFixed(0) : 0;
+        document.getElementById('stat-rate').innerText = `${rate}%`;
+
+        document.getElementById('auditContainer').innerHTML = logs.map(l => `
+            <div class="audit-item">
+                <div class="audit-header" onclick="const d = this.nextElementSibling; d.style.display = d.style.display === 'grid' ? 'none' : 'grid'">
+                    <span><b>${l.name}</b> <small style="margin-left:10px; color:#64748b">${l.time}</small></span>
+                    <div><span class="pill ${l.violations ? 'pill-flag' : 'pill-clean'}">${l.violations ? 'Exception' : 'Clean'}</span></div>
+                </div>
+                <div class="audit-details">${Object.entries(l.fields).map(([k,v]) => `<div><b>${k}:</b> ${v}</div>`).join('')}</div>
+            </div>
+        `).join('');
+    }
+
+    document.getElementById('admissionForm').addEventListener('input', validate);
+    document.getElementById('admissionForm').addEventListener('change', validate);
+    loadLogs();
 </script>
 </body>
 </html>
