@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AdmitGuard - Admission Validation System</title>
+    <style>
+        :root {
+            --primary-blue: #2563eb;
+            --bg-gray: #f8fafc;
+            --text-dark: #1e293b;
+            --border-color: #e2e8f0;
+            --error-red: #dc2626;
+            --warning-yellow: #facc15;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-gray);
+            color: var(--text-dark);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 16px; /* [cite: 138] */
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            width: 100%;
+            max-width: 600px;
+            border-top: 4px solid var(--primary-blue); /* [cite: 139] */
+        }
+
+        h2 {
+            margin-top: 0;
+            color: var(--primary-blue);
+            font-size: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 10px;
+        }
+
+        .form-group.full-width {
+            grid-column: span 2;
+        }
+
+        label {
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+        }
+
+        input, select {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 0.9rem;
+            transition: border-color 0.2s;
+        }
+
+        input.invalid {
+            border-color: var(--error-red);
+            background-color: #fffafb;
+        }
+
+        /* Sprint 2: Warning and Exception Styles [cite: 85-88] */
+        .warning-box {
+            background-color: #fefce8;
+            border: 1px solid var(--warning-yellow);
+            color: #854d0e;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .exception-section {
+            display: none;
+            margin-top: 15px;
+            padding: 12px;
+            background: #f8fafc;
+            border-left: 4px solid var(--warning-yellow);
+        }
+
+        textarea {
+            width: 100%;
+            margin-top: 8px;
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 0.85rem;
+            box-sizing: border-box;
+        }
+
+        .manager-flag {
+            color: #b91c1c;
+            font-weight: bold;
+            font-size: 0.75rem;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .toggle-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: #eff6ff;
+            border-radius: 4px;
+        }
+
+        button {
+            background-color: var(--primary-blue);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+            width: 100%;
+        }
+
+        button:disabled {
+            background-color: #94a3b8;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>AdmitGuard Admission Form</h2>
+    <form id="admissionForm">
+        <div class="form-grid">
+            <div class="form-group full-width">
+                <label for="fullName">Full Name</label>
+                <input type="text" id="fullName" placeholder="Enter full name">
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" placeholder="example@email.com">
+            </div>
+
+            <div class="form-group">
+                <label for="phone">Phone Number</label>
+                <input type="number" id="phone" placeholder="10-digit number">
+            </div>
+
+            <div class="form-group">
+                <label for="aadhaar">Aadhaar Number</label>
+                <input type="number" id="aadhaar" placeholder="12-digit number">
+            </div>
+
+            <div class="form-group">
+                <label for="qualification">Highest Qualification</label>
+                <select id="qualification">
+                    <option value="">Select Qualification</option>
+                    <option value="B.Tech">B.Tech</option>
+                    <option value="M.Tech">M.Tech</option>
+                    <option value="PhD">PhD</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="age">Age</label>
+                <input type="number" id="age" placeholder="Age">
+            </div>
+
+            <div class="form-group">
+                <label for="gradYear">Graduation Year</label>
+                <input type="number" id="gradYear" placeholder="YYYY">
+            </div>
+
+            <div class="form-group">
+                <label for="score">Academic Score (% or CGPA)</label>
+                <input type="number" step="0.01" id="score" placeholder="e.g. 85.5 or 8.5">
+            </div>
+
+            <div class="form-group">
+                <label for="testScore">Screening Test Score (0-100)</label>
+                <input type="number" id="testScore" placeholder="Score">
+            </div>
+
+            <div class="form-group">
+                <label for="interviewStatus">Interview Status</label>
+                <select id="interviewStatus">
+                    <option value="Pending">Pending</option>
+                    <option value="Cleared">Cleared</option>
+                    <option value="Rejected">Rejected</option>
+                </select>
+            </div>
+
+            <div class="form-group full-width">
+                <div class="toggle-group">
+                    <input type="checkbox" id="offerLetter" disabled>
+                    <label for="offerLetter">Offer Letter Issued (Only if Interview Cleared)</label>
+                </div>
+            </div>
+        </div>
+
+        <div id="warningBox" class="warning-box">⚠ Soft Eligibility Criteria Not Met</div>
+        
+        <div id="exceptionSection" class="exception-section">
+            <div class="toggle-group" style="background: transparent; padding: 0; margin-bottom: 10px;">
+                <input type="checkbox" id="requestException">
+                <label for="requestException"><strong>Request Exception</strong></label>
+            </div>
+            <label for="rationale">Rationale for Exception (min 30 chars + keywords)</label>
+            <textarea id="rationale" rows="3" placeholder="e.g., Special case approved by Dean..."></textarea>
+            <div id="managerFlag" class="manager-flag">⚠ > 2 exceptions: Flagged for Manager Review</div>
+        </div>
+
+        <button type="button" id="submitBtn">Submit Application</button>
+    </form>
+</div>
+
+<script>
+    const form = document.getElementById('admissionForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const interviewDropdown = document.getElementById('interviewStatus');
+    const offerCheckbox = document.getElementById('offerLetter');
+    const rationaleInput = document.getElementById('rationale');
+    const exceptionToggle = document.getElementById('requestException');
+
+    // Rule Definitions [cite: 71-84]
+    const STRICT_RULES = {
+        fullName: val => /^[a-zA-Z\s]{2,}$/.test(val),
+        email: val => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),
+        phone: val => /^[6-9]\d{9}$/.test(val),
+        aadhaar: val => /^\d{12}$/.test(val)
+    };
+
+    const SOFT_RULES = {
+        age: val => val >= 18 && val <= 35,
+        gradYear: val => val >= 2015 && val <= 2025,
+        score: val => val >= 60 || (val >= 6.0 && val <= 10.0),
+        testScore: val => val >= 40
+    };
+
+    const KEYWORDS = ["approved by", "special case", "documentation pending", "waiver granted"];
+
+    // Prevent "e" in numbers [cite: 124]
+    document.querySelectorAll('input[type="number"]').forEach(input => {
+        input.addEventListener('keydown', (e) => {
+            if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault();
+        });
+    });
+
+    function validateForm() {
+        let strictPass = true;
+        let softViolations = 0;
+
+        // 1. Strict Validation [cite: 71-79]
+        Object.keys(STRICT_RULES).forEach(key => {
+            const input = document.getElementById(key);
+            const isValid = STRICT_RULES[key](input.value);
+            if (!isValid) {
+                if (input.value !== "") input.classList.add('invalid');
+                strictPass = false;
+            } else {
+                input.classList.remove('invalid');
+            }
+        });
+
+        if (interviewDropdown.value === 'Rejected') strictPass = false;
+
+        // 2. Soft Rule Checking [cite: 80-84]
+        const ageVal = document.getElementById('age').value;
+        const gradVal = document.getElementById('gradYear').value;
+        const scoreVal = document.getElementById('score').value;
+        const testVal = document.getElementById('testScore').value;
+
+        if (ageVal && !SOFT_RULES.age(ageVal)) softViolations++;
+        if (gradVal && !SOFT_RULES.gradYear(gradVal)) softViolations++;
+        if (scoreVal && !SOFT_RULES.score(scoreVal)) softViolations++;
+        if (testVal && !SOFT_RULES.testScore(testVal)) softViolations++;
+
+        // 3. Exception Logic [cite: 85-90]
+        const warningBox = document.getElementById('warningBox');
+        const exceptionSection = document.getElementById('exceptionSection');
+        const managerFlag = document.getElementById('managerFlag');
+
+        if (softViolations > 0) {
+            warningBox.style.display = 'block';
+            exceptionSection.style.display = 'block';
+            managerFlag.style.display = softViolations > 2 ? 'block' : 'none';
+
+            // Validate rationale 
+            const rationaleText = rationaleInput.value.toLowerCase();
+            const hasKeyword = KEYWORDS.some(k => rationaleText.includes(k));
+            const isRationaleValid = rationaleInput.value.length >= 30 && hasKeyword;
+
+            submitBtn.disabled = !(strictPass && exceptionToggle.checked && isRationaleValid);
+        } else {
+            warningBox.style.display = 'none';
+            exceptionSection.style.display = 'none';
+            submitBtn.disabled = !strictPass;
+        }
+
+        // Offer Letter Logic [cite: 78]
+        offerCheckbox.disabled = interviewDropdown.value !== 'Cleared';
+        if (offerCheckbox.disabled) offerCheckbox.checked = false;
+    }
+
+    form.addEventListener('input', validateForm);
+    interviewDropdown.addEventListener('change', validateForm);
+    validateForm();
+</script>
+
+</body>
+</html>
