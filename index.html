@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AdmitGuard - Admission Validation System</title>
+    <style>
+       :root {
+    --primary-blue: #2563eb;
+    --bg-gray: #f8fafc;
+    --text-dark: #1e293b;
+    --border-color: #e2e8f0;
+    --error-red: #dc2626; /* New for validation */
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-gray);
+    color: var(--text-dark);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px;
+}
+
+.card {
+    background: white;
+    padding: 16px; /* [cite: 138] */
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    width: 100%;
+    max-width: 600px;
+    border-top: 4px solid var(--primary-blue); /* [cite: 139] */
+}
+
+h2 {
+    margin-top: 0;
+    color: var(--primary-blue);
+    font-size: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 10px;
+}
+
+.form-group.full-width {
+    grid-column: span 2;
+}
+
+label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    margin-bottom: 5px;
+}
+
+input, select {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 0.9rem;
+    transition: border-color 0.2s;
+}
+
+/* --- Validation Styles --- */
+input.invalid {
+    border-color: var(--error-red);
+    background-color: #fffafb;
+}
+
+.error-msg {
+    color: var(--error-red);
+    font-size: 0.7rem;
+    margin-top: 4px;
+    font-weight: 500;
+}
+
+.toggle-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: #eff6ff;
+    border-radius: 4px;
+}
+
+button {
+    background-color: var(--primary-blue);
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 15px;
+    width: 100%;
+}
+
+button:disabled {
+    background-color: #94a3b8; /*  */
+    cursor: not-allowed;
+}
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>AdmitGuard Admission Form</h2>
+    <form id="admissionForm">
+        <div class="form-grid">
+            <div class="form-group full-width">
+                <label for="fullName">Full Name</label>
+                <input type="text" id="fullName" placeholder="Enter full name">
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" placeholder="example@email.com">
+            </div>
+
+            <div class="form-group">
+                <label for="phone">Phone Number</label>
+                <input type="number" id="phone" placeholder="10-digit number">
+            </div>
+
+            <div class="form-group">
+                <label for="aadhaar">Aadhaar Number</label>
+                <input type="number" id="aadhaar" placeholder="12-digit number">
+            </div>
+
+            <div class="form-group">
+                <label for="qualification">Highest Qualification</label>
+                <select id="qualification">
+                    <option value="">Select Qualification</option>
+                    <option value="B.Tech">B.Tech</option>
+                    <option value="M.Tech">M.Tech</option>
+                    <option value="PhD">PhD</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="age">Age</label>
+                <input type="number" id="age" placeholder="Age">
+            </div>
+
+            <div class="form-group">
+                <label for="gradYear">Graduation Year</label>
+                <input type="number" id="gradYear" placeholder="YYYY">
+            </div>
+
+            <div class="form-group">
+                <label for="score">Academic Score (% or CGPA)</label>
+                <input type="number" step="0.01" id="score" placeholder="e.g. 85.5 or 8.5">
+            </div>
+
+            <div class="form-group">
+                <label for="testScore">Screening Test Score (0-100)</label>
+                <input type="number" id="testScore" placeholder="Score">
+            </div>
+
+            <div class="form-group">
+                <label for="interviewStatus">Interview Status</label>
+                <select id="interviewStatus">
+                    <option value="Pending">Pending</option>
+                    <option value="Cleared">Cleared</option>
+                    <option value="Rejected">Rejected</option>
+                </select>
+            </div>
+
+            <div class="form-group full-width">
+                <div class="toggle-group">
+                    <input type="checkbox" id="offerLetter" disabled>
+                    <label for="offerLetter">Offer Letter Issued (Only if Interview Cleared)</label>
+                </div>
+            </div>
+        </div>
+
+        <button type="button">Submit Application</button>
+    </form>
+</div>
+
+<script>
+   const form = document.getElementById('admissionForm');
+const submitBtn = form.querySelector('button');
+const interviewDropdown = document.getElementById('interviewStatus');
+const offerCheckbox = document.getElementById('offerLetter');
+
+// Fields to validate
+const fields = {
+    fullName: { el: document.getElementById('fullName'), validate: val => /^[a-zA-Z\s]{2,}$/.test(val) },
+    email: { el: document.getElementById('email'), validate: val => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val) },
+    phone: { el: document.getElementById('phone'), validate: val => /^[6-9]\d{9}$/.test(val) },
+    aadhaar: { el: document.getElementById('aadhaar'), validate: val => /^\d{12}$/.test(val) }
+};
+
+// 1. Prevent the "e" character in number fields [cite: 124]
+document.querySelectorAll('input[type="number"]').forEach(input => {
+    input.addEventListener('keydown', (e) => {
+        if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault();
+    });
+});
+
+// 2. Real-time validation handler
+function validateForm() {
+    let isAllValid = true;
+
+    // Check Strict Rules
+    Object.keys(fields).forEach(key => {
+        const field = fields[key];
+        const isValid = field.validate(field.el.value);
+        
+        // Toggle error classes/visibility
+        if (!isValid && field.el.value !== "") {
+            field.el.classList.add('invalid');
+            isAllValid = false;
+        } else {
+            field.el.classList.remove('invalid');
+        }
+    });
+
+    // 3. Workflow Validation: Block if Rejected 
+    const isRejected = interviewDropdown.value === 'Rejected';
+    if (isRejected) isAllValid = false;
+
+    // Toggle Offer Letter logic 
+    offerCheckbox.disabled = interviewDropdown.value !== 'Cleared';
+    if (offerCheckbox.disabled) offerCheckbox.checked = false;
+
+    // 4. Submit Button Control 
+    submitBtn.disabled = !isAllValid;
+}
+
+// Attach listeners to every field for real-time vibe
+form.addEventListener('input', validateForm);
+interviewDropdown.addEventListener('change', validateForm);
+
+// Initial check on load
+validateForm();
+</script>
+
+</body>
+</html>
