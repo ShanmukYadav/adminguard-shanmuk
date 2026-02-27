@@ -38,27 +38,25 @@
         .stat-label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
 
         /* Form Styling */
-        .card { background: white; padding: 2rem; border-radius: 16px; box-shadow: var(--shadow); }
+        .card { background: white; padding: 2.5rem; border-radius: 16px; box-shadow: var(--shadow); }
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
         .full-width { grid-column: span 2; }
         .form-group { display: flex; flex-direction: column; position: relative; }
         label { font-weight: 600; font-size: 0.85rem; margin-bottom: 0.4rem; color: #475569; }
         input, select, textarea { padding: 0.8rem; border: 2px solid var(--border); border-radius: 8px; font-size: 0.95rem; background: #fcfdfe; }
         
-        /* Validation State Colors */
         input.strict-err { border-color: var(--error) !important; background-color: #fff1f2; }
         input.soft-err { border-color: var(--warning) !important; background-color: #fffbeb; }
         .err-msg { font-size: 0.75rem; font-weight: 600; margin-top: 4px; display: none; }
         .strict-msg { color: var(--error); }
         .soft-msg { color: #b45309; }
 
-        input:focus { border-color: var(--primary-blue); outline: none; box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.1); }
-
         .banner { padding: 1rem; border-radius: 8px; font-weight: 600; margin-bottom: 1rem; display: none; text-align: center; font-size: 0.9rem; }
         .banner-error { background: #fee2e2; color: var(--error); border: 1px solid #fecaca; }
         .banner-warning { background: #fffbeb; color: #92400e; border: 1px solid #fef3c7; }
         .banner-success { background: #f0fdf4; color: var(--success); border: 1px solid #bbf7d0; }
 
+        /* Audit Explorer */
         .audit-item { background: white; margin-bottom: 0.8rem; border-radius: 10px; border: 1px solid var(--border); overflow: hidden; }
         .audit-header { padding: 1.2rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
         .audit-header:hover { background: #f8fafc; }
@@ -73,10 +71,10 @@
 </head>
 <body>
 
-<nav>
-    <button class="tab-btn active" onclick="switchTab('dashboard')">Compliance Dashboard</button>
-    <button class="tab-btn" onclick="switchTab('form')">New Application</button>
-    <button class="tab-btn" onclick="switchTab('audit')">Audit Logs</button>
+<nav id="navbar">
+    <button class="tab-btn active" data-view="dashboard">Compliance Dashboard</button>
+    <button class="tab-btn" data-view="form">New Application</button>
+    <button class="tab-btn" data-view="audit">Audit Logs</button>
 </nav>
 
 <div class="container">
@@ -86,7 +84,7 @@
             <div class="stat-card"><span class="stat-value" id="stat-flagged">0</span><span class="stat-label">Manager Flags</span></div>
             <div class="stat-card"><span class="stat-value" id="stat-rate">0%</span><span class="stat-label">Exception Rate</span></div>
         </div>
-        <div class="card" style="text-align: center; color: #64748b;"><p>Review key institutional metrics above or start a new screening below.</p></div>
+        <div class="card" style="text-align: center; color: #64748b;"><p>Operations oversight active. Select a tab above to proceed.</p></div>
     </div>
 
     <div id="form" class="view">
@@ -120,28 +118,28 @@
                         <label>Qualification</label>
                         <select id="qualification">
                             <option value="">Select...</option>
-                            <option>B.Tech</option><option>M.Tech</option><option>BCA</option><option>MCA</option>
+                            <option>B.Tech</option><option>B.E.</option><option>M.Tech</option><option>BCA</option><option>MCA</option>
                         </select>
                     </div>
                     <div class="form-group">
                         <label>Age</label>
-                        <input type="number" id="age" placeholder="Target: 18-35">
-                        <span id="err-age" class="err-msg soft-msg">⚠ Policy Warning: Target age is 18-35.</span>
+                        <input type="number" id="age" placeholder="Policy: 18-35">
+                        <span id="err-age" class="err-msg soft-msg">⚠ Policy Warning: Age 18-35.</span>
                     </div>
                     <div class="form-group">
                         <label>Grad Year</label>
-                        <input type="number" id="gradYear" placeholder="Target: 2015-2025">
-                        <span id="err-gradYear" class="err-msg soft-msg">⚠ Policy Warning: Target 2015-2025.</span>
+                        <input type="number" id="gradYear" placeholder="Policy: 2015-2025">
+                        <span id="err-gradYear" class="err-msg soft-msg">⚠ Policy Warning: 2015-2025.</span>
                     </div>
                     <div class="form-group">
                         <label>Score (% or CGPA)</label>
-                        <input type="number" step="0.01" id="score" placeholder="Target: >=60% / 6.0">
-                        <span id="err-score" class="err-msg soft-msg">⚠ Policy Warning: Below 60% or 6.0 CGPA.</span>
+                        <input type="number" step="0.01" id="score" placeholder="Policy: >=60% / 6.0">
+                        <span id="err-score" class="err-msg soft-msg">⚠ Policy Warning: Below 60% or 6.0.</span>
                     </div>
                     <div class="form-group">
                         <label>Screening Test</label>
-                        <input type="number" id="testScore" placeholder="Target: >=40">
-                        <span id="err-testScore" class="err-msg soft-msg">⚠ Policy Warning: Score below 40.</span>
+                        <input type="number" id="testScore" placeholder="Policy: >=40">
+                        <span id="err-testScore" class="err-msg soft-msg">⚠ Policy Warning: Below 40.</span>
                     </div>
                     <div class="form-group full-width">
                         <label>Interview Outcome</label>
@@ -158,8 +156,8 @@
                         <input type="checkbox" id="requestException" style="width: 18px; height: 18px;"> 
                         <span>Request Exception Override</span>
                     </label>
-                    <textarea id="rationale" rows="2" style="margin-top:1rem; width: 100%;" placeholder="Rationale (30 chars + keywords: 'approved by', 'special case', 'waiver granted')"></textarea>
-                    <span id="err-rationale" class="err-msg strict-msg">⚠ Insufficient rationale or missing institutional keywords.</span>
+                    <textarea id="rationale" rows="2" style="margin-top:1rem; width: 100%;" placeholder="30 chars + keyword: 'approved by', 'special case', or 'waiver granted'"></textarea>
+                    <span id="err-rationale" class="err-msg strict-msg">⚠ Required: 30 characters + institutional keyword.</span>
                 </div>
 
                 <div id="managerFlag" class="banner banner-error" style="margin-top: 1rem;">⚠️ HIGH EXCEPTION COUNT: Flagged for Manager Review.</div>
@@ -176,134 +174,153 @@
 
 <script>
     const CONFIG = {
-        strict: { phone: /^[6-9]\d{9}$/, email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, aadhaarLen: 12 },
+        strict: { phone: /^[6-9]\d{9}$/, email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, aadhaar: 12 },
         soft: { minAge: 18, maxAge: 35, start: 2015, end: 2025, minPct: 60, minCGPA: 6.0, minTest: 40 },
         keywords: ["approved by", "special case", "documentation pending", "waiver granted"]
     };
 
-    function switchTab(id) {
-        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-        document.querySelector(`[onclick="switchTab('${id}')"]`).classList.add('active');
-        if(id !== 'form') loadLogs();
+    // Robust Tab Switching
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const viewId = btn.getAttribute('data-view');
+            
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            
+            document.getElementById(viewId).classList.add('active');
+            btn.classList.add('active');
+            
+            loadLogs(); // Load data immediately on click
+        });
+    });
+
+    // Unified Logic for Validation
+    function validateField(id) {
+        const el = document.getElementById(id);
+        const val = el.value.trim();
+        const msg = document.getElementById('err-' + id);
+        if (!el) return;
+
+        let isStrictErr = false;
+        let isSoftErr = false;
+
+        if (val !== "") {
+            if (id === 'email') isStrictErr = !CONFIG.strict.email.test(val);
+            if (id === 'phone') isStrictErr = !CONFIG.strict.phone.test(val);
+            if (id === 'aadhaar') isStrictErr = val.length !== 12;
+            if (id === 'fullName') isStrictErr = val.length < 2 || /\d/.test(val);
+            if (id === 'age') isSoftErr = val < CONFIG.soft.minAge || val > CONFIG.soft.maxAge;
+            if (id === 'gradYear') isSoftErr = val < CONFIG.soft.start || val > CONFIG.soft.end;
+            if (id === 'score') isSoftErr = val < CONFIG.soft.minPct && val < CONFIG.soft.minCGPA;
+            if (id === 'testScore') isSoftErr = val < CONFIG.soft.minTest;
+            if (id === 'rationale') isStrictErr = val.length < 30 || !CONFIG.keywords.some(k => val.toLowerCase().includes(k));
+        }
+
+        el.classList.toggle('strict-err', isStrictErr);
+        el.classList.toggle('soft-err', isSoftErr);
+        if (msg) msg.style.display = (isStrictErr || isSoftErr) ? 'block' : 'none';
+
+        checkFormEnablement();
     }
 
-    // 1. Updated validation logic with 'blur' support
-function validateField(id) {
-    const el = document.getElementById(id);
-    const val = el.value.trim();
-    const msg = document.getElementById('err-' + id);
-    
-    // Don't show errors for empty fields unless it's a "Strict" requirement on submit
-    if (val === "") {
-        el.classList.remove('strict-err', 'soft-err');
-        if (msg) msg.style.display = 'none';
-        return;
+    function checkFormEnablement() {
+        const getV = (id) => document.getElementById(id).value;
+        
+        const nameOk = getV('fullName').length >= 2 && !/\d/.test(getV('fullName'));
+        const emailOk = CONFIG.strict.email.test(getV('email'));
+        const phoneOk = CONFIG.strict.phone.test(getV('phone'));
+        const aadhaarOk = getV('aadhaar').length === 12;
+        const statusOk = getV('interviewStatus') !== 'Rejected';
+
+        let softViolations = 0;
+        if (getV('age') !== "" && (getV('age') < 18 || getV('age') > 35)) softViolations++;
+        if (getV('gradYear') !== "" && (getV('gradYear') < 2015 || getV('gradYear') > 2025)) softViolations++;
+        if (getV('score') !== "" && (getV('score') < 60 && getV('score') < 6.0)) softViolations++;
+        if (getV('testScore') !== "" && getV('testScore') < 40) softViolations++;
+
+        document.getElementById('errorBanner').style.display = getV('interviewStatus') === 'Rejected' ? 'block' : 'none';
+        document.getElementById('exceptionArea').style.display = softViolations > 0 ? 'block' : 'none';
+        document.getElementById('managerFlag').style.display = softViolations > 2 ? 'block' : 'none';
+
+        const rat = getV('rationale');
+        const ratOk = rat.length >= 30 && CONFIG.keywords.some(k => rat.toLowerCase().includes(k));
+
+        const canSubmit = nameOk && emailOk && phoneOk && aadhaarOk && statusOk && (softViolations === 0 || (document.getElementById('requestException').checked && ratOk));
+        document.getElementById('submitBtn').disabled = !canSubmit;
     }
 
-    let isStrictErr = false;
-    let isSoftErr = false;
+    // Attach Blur Listeners
+    ['fullName', 'email', 'phone', 'aadhaar', 'age', 'gradYear', 'score', 'testScore', 'rationale'].forEach(id => {
+        document.getElementById(id).addEventListener('blur', () => validateField(id));
+        document.getElementById(id).addEventListener('input', checkFormEnablement);
+    });
+    document.getElementById('interviewStatus').addEventListener('change', checkFormEnablement);
+    document.getElementById('requestException').addEventListener('change', checkFormEnablement);
 
-    // Logic specifically for Email
-    if (id === 'email') {
-        isStrictErr = !CONFIG.strict.email.test(val);
-    } 
-    // Logic for Phone
-    else if (id === 'phone') {
-        isStrictErr = !CONFIG.strict.phone.test(val);
-    }
-    // Logic for Aadhaar
-    else if (id === 'aadhaar') {
-        isStrictErr = val.length !== 12;
-    }
-    // Logic for Soft Rules (Age/Year)
-    else if (id === 'age') {
-        isSoftErr = val < CONFIG.soft.minAge || val > CONFIG.soft.maxAge;
-    }
-
-    // Apply UI feedback
-    el.classList.toggle('strict-err', isStrictErr);
-    el.classList.toggle('soft-err', isSoftErr);
-    if (msg) msg.style.display = (isStrictErr || isSoftErr) ? 'block' : 'none';
-
-    // Always run the master check to enable/disable submit button
-    checkFormStatus();
-}
-
-// 2. Master status check for the Submit button
-function checkFormStatus() {
-    const getV = (id) => document.getElementById(id).value;
-    
-    const nameValid = getV('fullName').length >= 2;
-    const emailValid = CONFIG.strict.email.test(getV('email'));
-    const phoneValid = CONFIG.strict.phone.test(getV('phone'));
-    const isRejected = getV('interviewStatus') === 'Rejected';
-
-    // Count Soft Rule violations for the exception area
-    let softViolations = 0;
-    if (getV('age') !== "" && (getV('age') < CONFIG.soft.minAge || getV('age') > CONFIG.soft.maxAge)) softViolations++;
-    
-    const rat = getV('rationale');
-    const ratValid = rat.length >= 30 && CONFIG.keywords.some(k => rat.toLowerCase().includes(k));
-
-    const canSubmit = nameValid && emailValid && phoneValid && !isRejected && 
-                      (softViolations === 0 || (document.getElementById('requestException').checked && ratValid));
-    
-    document.getElementById('submitBtn').disabled = !canSubmit;
-}
-
-// 3. Attach 'blur' listeners to fields
-const fieldsToWatch = ['fullName', 'email', 'phone', 'aadhaar', 'age', 'gradYear', 'score', 'testScore', 'rationale'];
-fieldsToWatch.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) {
-        // Only show red/yellow alerts when the user LEAVES the tab
-        el.addEventListener('blur', () => validateField(id));
-        // Keep checking button status as they type so it enables immediately
-        el.addEventListener('input', checkFormStatus);
-    }
-});
-
-// Immediate check for the dropdown
-document.getElementById('interviewStatus').addEventListener('change', () => {
-    checkFormStatus();
-    document.getElementById('errorBanner').style.display = document.getElementById('interviewStatus').value === 'Rejected' ? 'block' : 'none';
-});
+    // Save Data
     document.getElementById('submitBtn').onclick = () => {
         const entry = {
-            id: Date.now(), name: document.getElementById('fullName').value, time: new Date().toLocaleString(),
-            violations: document.querySelectorAll('.soft-err').length > 0, flagged: document.getElementById('managerFlag').style.display === 'block',
-            fields: { Email: document.getElementById('email').value, Phone: document.getElementById('phone').value, Qual: document.getElementById('qualification').value, Age: document.getElementById('age').value, Status: document.getElementById('interviewStatus').value, Rationale: document.getElementById('rationale').value || "None" }
+            id: Date.now(),
+            name: document.getElementById('fullName').value,
+            time: new Date().toLocaleString(),
+            violations: document.querySelectorAll('.soft-err').length > 0,
+            flagged: document.getElementById('managerFlag').style.display === 'block',
+            fields: {
+                Email: document.getElementById('email').value,
+                Phone: document.getElementById('phone').value,
+                Qual: document.getElementById('qualification').value,
+                Age: document.getElementById('age').value,
+                Status: document.getElementById('interviewStatus').value,
+                Rationale: document.getElementById('rationale').value || "None"
+            }
         };
         const logs = JSON.parse(localStorage.getItem('admitLogs') || '[]');
         logs.unshift(entry);
         localStorage.setItem('admitLogs', JSON.stringify(logs));
         document.getElementById('successBanner').style.display = 'block';
-        setTimeout(() => location.reload(), 1200);
+        setTimeout(() => location.reload(), 1000);
     };
 
+    // Data Sync and Audit Population
     function loadLogs() {
         const logs = JSON.parse(localStorage.getItem('admitLogs') || '[]');
-        document.getElementById('stat-total').innerText = logs.length;
-        document.getElementById('stat-flagged').innerText = logs.filter(l => l.flagged).length;
-        const rate = logs.length ? (logs.filter(l => l.violations).length / logs.length * 100).toFixed(0) : 0;
-        document.getElementById('stat-rate').innerText = `${rate}%`;
+        
+        // Update Dashboard Stats
+        const totalEl = document.getElementById('stat-total');
+        if (totalEl) totalEl.innerText = logs.length;
+        
+        const flaggedEl = document.getElementById('stat-flagged');
+        if (flaggedEl) flaggedEl.innerText = logs.filter(l => l.flagged).length;
+        
+        const rateEl = document.getElementById('stat-rate');
+        if (rateEl) {
+            const rate = logs.length ? (logs.filter(l => l.violations).length / logs.length * 100).toFixed(0) : 0;
+            rateEl.innerText = `${rate}%`;
+        }
 
-        document.getElementById('auditContainer').innerHTML = logs.map(l => `
+        // Update Audit Trail
+        const container = document.getElementById('auditContainer');
+        if (!container) return;
+
+        if (logs.length === 0) {
+            container.innerHTML = '<div class="card" style="text-align:center; color:#64748b; margin-top:1rem;">No compliance logs recorded yet.</div>';
+            return;
+        }
+
+        container.innerHTML = logs.map(l => `
             <div class="audit-item">
-                <div class="audit-header" onclick="const d = this.nextElementSibling; d.style.display = d.style.display === 'grid' ? 'none' : 'grid'">
-                    <span><b>${l.name}</b> <small style="margin-left:10px; color:#64748b">${l.time}</small></span>
+                <div class="audit-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'grid' ? 'none' : 'grid'">
+                    <span><strong>${l.name}</strong> <small style="margin-left:10px; color:#64748b">${l.time}</small></span>
                     <div><span class="pill ${l.violations ? 'pill-flag' : 'pill-clean'}">${l.violations ? 'Exception' : 'Clean'}</span></div>
                 </div>
-                <div class="audit-details">${Object.entries(l.fields).map(([k,v]) => `<div><b>${k}:</b> ${v}</div>`).join('')}</div>
+                <div class="audit-details">
+                    ${Object.entries(l.fields || {}).map(([k,v]) => `<div><b>${k}:</b> ${v || 'N/A'}</div>`).join('')}
+                </div>
             </div>
         `).join('');
     }
 
-    document.getElementById('admissionForm').addEventListener('input', validate);
-    document.getElementById('admissionForm').addEventListener('change', validate);
-    loadLogs();
+    window.onload = loadLogs;
 </script>
 </body>
 </html>
