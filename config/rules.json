@@ -1,0 +1,19 @@
+{
+  "strict_rules": {
+    "min_name_length": 2,
+    "phone_pattern": "^[6-9]\\d{9}$",
+    "aadhaar_length": 12
+  },
+  "soft_rules": {
+    "min_age": 18,
+    "max_age": 35,
+    "start_grad_year": 2015,
+    "end_grad_year": 2025,
+    "min_academic_score": 60,
+    "min_test_score": 40
+  },
+  "exception_logic": {
+    "min_rationale_length": 30,
+    "required_keywords": ["approved by", "special case", "documentation pending", "waiver granted"]
+  }
+}
