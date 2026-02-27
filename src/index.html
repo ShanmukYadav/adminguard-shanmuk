@@ -189,54 +189,87 @@
         if(id !== 'form') loadLogs();
     }
 
-    function validate() {
-        const getV = (id) => document.getElementById(id).value;
-        const setUI = (id, type, show) => {
-            const el = document.getElementById(id);
-            const msg = document.getElementById('err-'+id);
-            el.classList.toggle(type + '-err', show);
-            if(msg) msg.style.display = show ? 'block' : 'none';
-        };
-
-        // Strict Rules
-        const nameValid = getV('fullName').length >= 2 && !/\d/.test(getV('fullName'));
-        const emailValid = CONFIG.strict.email.test(getV('email'));
-        const phoneValid = CONFIG.strict.phone.test(getV('phone'));
-        const aadhaarValid = getV('aadhaar').length === 12;
-        const isRejected = getV('interviewStatus') === 'Rejected';
-
-        setUI('fullName', 'strict', !nameValid && getV('fullName') !== "");
-        setUI('email', 'strict', !emailValid && getV('email') !== "");
-        setUI('phone', 'strict', !phoneValid && getV('phone') !== "");
-        setUI('aadhaar', 'strict', !aadhaarValid && getV('aadhaar') !== "");
-        document.getElementById('errorBanner').style.display = isRejected ? 'block' : 'none';
-
-        // Soft Rules
-        let softViolations = 0;
-        const vAge = getV('age') !== "" && (getV('age') < CONFIG.soft.minAge || getV('age') > CONFIG.soft.maxAge);
-        const vGy = getV('gradYear') !== "" && (getV('gradYear') < CONFIG.soft.start || getV('gradYear') > CONFIG.soft.end);
-        const vSc = getV('score') !== "" && (getV('score') < CONFIG.soft.minPct && getV('score') < CONFIG.soft.minCGPA);
-        const vTs = getV('testScore') !== "" && getV('testScore') < CONFIG.soft.minTest;
-
-        setUI('age', 'soft', vAge); if(vAge) softViolations++;
-        setUI('gradYear', 'soft', vGy); if(vGy) softViolations++;
-        setUI('score', 'soft', vSc); if(vSc) softViolations++;
-        setUI('testScore', 'soft', vTs); if(vTs) softViolations++;
-
-        document.getElementById('exceptionArea').style.display = softViolations > 0 ? 'block' : 'none';
-        document.getElementById('managerFlag').style.display = softViolations > 2 ? 'block' : 'none';
-
-        // Rationale
-        const rat = getV('rationale');
-        const ratValid = rat.length >= 30 && CONFIG.keywords.some(k => rat.toLowerCase().includes(k));
-        setUI('rationale', 'strict', softViolations > 0 && !ratValid && rat !== "");
-
-        const canSubmit = nameValid && emailValid && phoneValid && aadhaarValid && !isRejected && 
-                          (softViolations === 0 || (document.getElementById('requestException').checked && ratValid));
-        
-        document.getElementById('submitBtn').disabled = !canSubmit;
+    // 1. Updated validation logic with 'blur' support
+function validateField(id) {
+    const el = document.getElementById(id);
+    const val = el.value.trim();
+    const msg = document.getElementById('err-' + id);
+    
+    // Don't show errors for empty fields unless it's a "Strict" requirement on submit
+    if (val === "") {
+        el.classList.remove('strict-err', 'soft-err');
+        if (msg) msg.style.display = 'none';
+        return;
     }
 
+    let isStrictErr = false;
+    let isSoftErr = false;
+
+    // Logic specifically for Email
+    if (id === 'email') {
+        isStrictErr = !CONFIG.strict.email.test(val);
+    } 
+    // Logic for Phone
+    else if (id === 'phone') {
+        isStrictErr = !CONFIG.strict.phone.test(val);
+    }
+    // Logic for Aadhaar
+    else if (id === 'aadhaar') {
+        isStrictErr = val.length !== 12;
+    }
+    // Logic for Soft Rules (Age/Year)
+    else if (id === 'age') {
+        isSoftErr = val < CONFIG.soft.minAge || val > CONFIG.soft.maxAge;
+    }
+
+    // Apply UI feedback
+    el.classList.toggle('strict-err', isStrictErr);
+    el.classList.toggle('soft-err', isSoftErr);
+    if (msg) msg.style.display = (isStrictErr || isSoftErr) ? 'block' : 'none';
+
+    // Always run the master check to enable/disable submit button
+    checkFormStatus();
+}
+
+// 2. Master status check for the Submit button
+function checkFormStatus() {
+    const getV = (id) => document.getElementById(id).value;
+    
+    const nameValid = getV('fullName').length >= 2;
+    const emailValid = CONFIG.strict.email.test(getV('email'));
+    const phoneValid = CONFIG.strict.phone.test(getV('phone'));
+    const isRejected = getV('interviewStatus') === 'Rejected';
+
+    // Count Soft Rule violations for the exception area
+    let softViolations = 0;
+    if (getV('age') !== "" && (getV('age') < CONFIG.soft.minAge || getV('age') > CONFIG.soft.maxAge)) softViolations++;
+    
+    const rat = getV('rationale');
+    const ratValid = rat.length >= 30 && CONFIG.keywords.some(k => rat.toLowerCase().includes(k));
+
+    const canSubmit = nameValid && emailValid && phoneValid && !isRejected && 
+                      (softViolations === 0 || (document.getElementById('requestException').checked && ratValid));
+    
+    document.getElementById('submitBtn').disabled = !canSubmit;
+}
+
+// 3. Attach 'blur' listeners to fields
+const fieldsToWatch = ['fullName', 'email', 'phone', 'aadhaar', 'age', 'gradYear', 'score', 'testScore', 'rationale'];
+fieldsToWatch.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+        // Only show red/yellow alerts when the user LEAVES the tab
+        el.addEventListener('blur', () => validateField(id));
+        // Keep checking button status as they type so it enables immediately
+        el.addEventListener('input', checkFormStatus);
+    }
+});
+
+// Immediate check for the dropdown
+document.getElementById('interviewStatus').addEventListener('change', () => {
+    checkFormStatus();
+    document.getElementById('errorBanner').style.display = document.getElementById('interviewStatus').value === 'Rejected' ? 'block' : 'none';
+});
     document.getElementById('submitBtn').onclick = () => {
         const entry = {
             id: Date.now(), name: document.getElementById('fullName').value, time: new Date().toLocaleString(),
