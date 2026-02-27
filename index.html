@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AdmitGuard - Admission Validation System</title>
+    <title>AdmitGuard - Compliance & Validation System</title>
     <style>
         :root {
             --primary-blue: #2563eb;
@@ -12,6 +12,7 @@
             --border-color: #e2e8f0;
             --error-red: #dc2626;
             --warning-yellow: #facc15;
+            --success-green: #16a34a;
         }
 
         body {
@@ -36,296 +37,165 @@
             border-top: 4px solid var(--primary-blue); /* [cite: 139] */
         }
 
-        h2 {
-            margin-top: 0;
-            color: var(--primary-blue);
-            font-size: 1.5rem;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 10px;
-        }
+        h2 { margin-top: 0; color: var(--primary-blue); font-size: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
 
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .form-group { display: flex; flex-direction: column; margin-bottom: 10px; }
+        .form-group.full-width { grid-column: span 2; }
+        
+        label { font-weight: 600; font-size: 0.85rem; margin-bottom: 5px; }
+        input, select, textarea { padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.9rem; transition: border-color 0.2s; }
 
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            margin-bottom: 10px;
-        }
+        input.invalid { border-color: var(--error-red); background-color: #fffafb; }
 
-        .form-group.full-width {
-            grid-column: span 2;
-        }
+        .warning-box { background-color: #fefce8; border: 1px solid var(--warning-yellow); color: #854d0e; padding: 10px; border-radius: 4px; font-size: 0.85rem; margin-top: 10px; display: none; }
+        .exception-section { display: none; margin-top: 15px; padding: 12px; background: #f8fafc; border-left: 4px solid var(--warning-yellow); }
+        .manager-flag { color: #b91c1c; font-weight: bold; font-size: 0.75rem; margin-top: 5px; display: none; }
+        .success-banner { background-color: #dcfce7; color: var(--success-green); padding: 10px; border-radius: 4px; text-align: center; margin-bottom: 15px; display: none; font-weight: bold; }
 
-        label {
-            font-weight: 600;
-            font-size: 0.85rem;
-            margin-bottom: 5px;
-        }
+        .toggle-group { display: flex; align-items: center; gap: 10px; padding: 10px; background: #eff6ff; border-radius: 4px; }
+        button { background-color: var(--primary-blue); color: white; border: none; padding: 12px; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 15px; width: 100%; }
+        button:disabled { background-color: #94a3b8; cursor: not-allowed; }
 
-        input, select {
-            padding: 8px 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            font-size: 0.9rem;
-            transition: border-color 0.2s;
-        }
-
-        input.invalid {
-            border-color: var(--error-red);
-            background-color: #fffafb;
-        }
-
-        /* Sprint 2: Warning and Exception Styles [cite: 85-88] */
-        .warning-box {
-            background-color: #fefce8;
-            border: 1px solid var(--warning-yellow);
-            color: #854d0e;
-            padding: 10px;
-            border-radius: 4px;
-            font-size: 0.85rem;
-            margin-top: 10px;
-            display: none;
-        }
-
-        .exception-section {
-            display: none;
-            margin-top: 15px;
-            padding: 12px;
-            background: #f8fafc;
-            border-left: 4px solid var(--warning-yellow);
-        }
-
-        textarea {
-            width: 100%;
-            margin-top: 8px;
-            padding: 8px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            font-size: 0.85rem;
-            box-sizing: border-box;
-        }
-
-        .manager-flag {
-            color: #b91c1c;
-            font-weight: bold;
-            font-size: 0.75rem;
-            margin-top: 5px;
-            display: none;
-        }
-
-        .toggle-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px;
-            background: #eff6ff;
-            border-radius: 4px;
-        }
-
-        button {
-            background-color: var(--primary-blue);
-            color: white;
-            border: none;
-            padding: 12px;
-            border-radius: 4px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 15px;
-            width: 100%;
-        }
-
-        button:disabled {
-            background-color: #94a3b8;
-            cursor: not-allowed;
-        }
+        /* Audit View [cite: 66-67] */
+        .audit-trail { margin-top: 30px; border-top: 2px dashed var(--border-color); padding-top: 15px; }
+        .audit-trail h3 { font-size: 0.9rem; color: #64748b; margin-top: 0; }
+        .audit-item { font-size: 0.75rem; background: #f1f5f9; padding: 8px; margin-bottom: 5px; border-radius: 4px; }
     </style>
 </head>
 <body>
 
 <div class="card">
+    <div id="successBanner" class="success-banner">Application Successfully Submitted</div>
     <h2>AdmitGuard Admission Form</h2>
     <form id="admissionForm">
         <div class="form-grid">
-            <div class="form-group full-width">
-                <label for="fullName">Full Name</label>
-                <input type="text" id="fullName" placeholder="Enter full name">
-            </div>
-
-            <div class="form-group">
-                <label for="email">Email Address</label>
-                <input type="email" id="email" placeholder="example@email.com">
-            </div>
-
-            <div class="form-group">
-                <label for="phone">Phone Number</label>
-                <input type="number" id="phone" placeholder="10-digit number">
-            </div>
-
-            <div class="form-group">
-                <label for="aadhaar">Aadhaar Number</label>
-                <input type="number" id="aadhaar" placeholder="12-digit number">
-            </div>
-
+            <div class="form-group full-width"><label for="fullName">Full Name</label><input type="text" id="fullName" placeholder="Enter full name"></div>
+            <div class="form-group"><label for="email">Email Address</label><input type="email" id="email" placeholder="example@email.com"></div>
+            <div class="form-group"><label for="phone">Phone Number</label><input type="number" id="phone" placeholder="10-digit number"></div>
+            <div class="form-group"><label for="aadhaar">Aadhaar Number</label><input type="number" id="aadhaar" placeholder="12-digit number"></div>
             <div class="form-group">
                 <label for="qualification">Highest Qualification</label>
                 <select id="qualification">
                     <option value="">Select Qualification</option>
-                    <option value="B.Tech">B.Tech</option>
-                    <option value="M.Tech">M.Tech</option>
-                    <option value="PhD">PhD</option>
-                    <option value="Other">Other</option>
+                    <option value="B.Tech">B.Tech</option><option value="M.Tech">M.Tech</option><option value="PhD">PhD</option><option value="Other">Other</option>
                 </select>
             </div>
-
-            <div class="form-group">
-                <label for="age">Age</label>
-                <input type="number" id="age" placeholder="Age">
-            </div>
-
-            <div class="form-group">
-                <label for="gradYear">Graduation Year</label>
-                <input type="number" id="gradYear" placeholder="YYYY">
-            </div>
-
-            <div class="form-group">
-                <label for="score">Academic Score (% or CGPA)</label>
-                <input type="number" step="0.01" id="score" placeholder="e.g. 85.5 or 8.5">
-            </div>
-
-            <div class="form-group">
-                <label for="testScore">Screening Test Score (0-100)</label>
-                <input type="number" id="testScore" placeholder="Score">
-            </div>
-
+            <div class="form-group"><label for="age">Age</label><input type="number" id="age" placeholder="Age"></div>
+            <div class="form-group"><label for="gradYear">Graduation Year</label><input type="number" id="gradYear" placeholder="YYYY"></div>
+            <div class="form-group"><label for="score">Academic Score</label><input type="number" step="0.01" id="score" placeholder="% or CGPA"></div>
+            <div class="form-group"><label for="testScore">Screening Test Score</label><input type="number" id="testScore" placeholder="0-100"></div>
             <div class="form-group">
                 <label for="interviewStatus">Interview Status</label>
-                <select id="interviewStatus">
-                    <option value="Pending">Pending</option>
-                    <option value="Cleared">Cleared</option>
-                    <option value="Rejected">Rejected</option>
-                </select>
+                <select id="interviewStatus"><option value="Pending">Pending</option><option value="Cleared">Cleared</option><option value="Rejected">Rejected</option></select>
             </div>
-
-            <div class="form-group full-width">
-                <div class="toggle-group">
-                    <input type="checkbox" id="offerLetter" disabled>
-                    <label for="offerLetter">Offer Letter Issued (Only if Interview Cleared)</label>
-                </div>
-            </div>
+            <div class="form-group full-width"><div class="toggle-group"><input type="checkbox" id="offerLetter" disabled><label for="offerLetter">Offer Letter Issued</label></div></div>
         </div>
 
         <div id="warningBox" class="warning-box">⚠ Soft Eligibility Criteria Not Met</div>
-        
         <div id="exceptionSection" class="exception-section">
-            <div class="toggle-group" style="background: transparent; padding: 0; margin-bottom: 10px;">
-                <input type="checkbox" id="requestException">
-                <label for="requestException"><strong>Request Exception</strong></label>
-            </div>
+            <div class="toggle-group" style="background:transparent; padding:0; margin-bottom:10px;"><input type="checkbox" id="requestException"><label for="requestException"><strong>Request Exception</strong></label></div>
             <label for="rationale">Rationale for Exception (min 30 chars + keywords)</label>
-            <textarea id="rationale" rows="3" placeholder="e.g., Special case approved by Dean..."></textarea>
-            <div id="managerFlag" class="manager-flag">⚠ > 2 exceptions: Flagged for Manager Review</div>
+            <textarea id="rationale" rows="2" placeholder="e.g. Approved by Dean..."></textarea>
+            <div id="managerFlag" class="manager-flag">⚠ Flagged for Manager Review</div>
         </div>
 
         <button type="button" id="submitBtn">Submit Application</button>
     </form>
+
+    <div class="audit-trail" id="auditTrail">
+        <h3>Recent Activity Log (Local Only)</h3>
+        <div id="auditLog"></div>
+    </div>
 </div>
 
 <script>
+    // Configurable Rules Engine [cite: 64-65, 198]
+    const APP_CONFIG = {
+        strict: { minNameLen: 2, phoneStart: /[6-9]/, phoneLen: 10, aadhaarLen: 12 },
+        soft: { minAge: 18, maxAge: 35, startYear: 2015, endYear: 2025, minScore: 60, minTest: 40 },
+        rationale: { minLen: 30, keywords: ["approved by", "special case", "documentation pending", "waiver granted"] }
+    };
+
     const form = document.getElementById('admissionForm');
     const submitBtn = document.getElementById('submitBtn');
-    const interviewDropdown = document.getElementById('interviewStatus');
-    const offerCheckbox = document.getElementById('offerLetter');
-    const rationaleInput = document.getElementById('rationale');
-    const exceptionToggle = document.getElementById('requestException');
+    const auditLogDiv = document.getElementById('auditLog');
 
-    // Rule Definitions [cite: 71-84]
-    const STRICT_RULES = {
-        fullName: val => /^[a-zA-Z\s]{2,}$/.test(val),
-        email: val => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),
-        phone: val => /^[6-9]\d{9}$/.test(val),
-        aadhaar: val => /^\d{12}$/.test(val)
-    };
-
-    const SOFT_RULES = {
-        age: val => val >= 18 && val <= 35,
-        gradYear: val => val >= 2015 && val <= 2025,
-        score: val => val >= 60 || (val >= 6.0 && val <= 10.0),
-        testScore: val => val >= 40
-    };
-
-    const KEYWORDS = ["approved by", "special case", "documentation pending", "waiver granted"];
-
-    // Prevent "e" in numbers [cite: 124]
     document.querySelectorAll('input[type="number"]').forEach(input => {
-        input.addEventListener('keydown', (e) => {
-            if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault();
-        });
+        input.addEventListener('keydown', (e) => { if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault(); });
     });
 
     function validateForm() {
         let strictPass = true;
         let softViolations = 0;
 
-        // 1. Strict Validation [cite: 71-79]
-        Object.keys(STRICT_RULES).forEach(key => {
-            const input = document.getElementById(key);
-            const isValid = STRICT_RULES[key](input.value);
-            if (!isValid) {
-                if (input.value !== "") input.classList.add('invalid');
-                strictPass = false;
-            } else {
-                input.classList.remove('invalid');
-            }
-        });
+        // Strict Checks [cite: 71-79]
+        const nameVal = document.getElementById('fullName').value;
+        const phoneVal = document.getElementById('phone').value;
+        const aadhaarVal = document.getElementById('aadhaar').value;
+        const emailVal = document.getElementById('email').value;
 
-        if (interviewDropdown.value === 'Rejected') strictPass = false;
+        strictPass = nameVal.length >= APP_CONFIG.strict.minNameLen && 
+                     /^[6-9]\d{9}$/.test(phoneVal) && 
+                     aadhaarVal.length === APP_CONFIG.strict.aadhaarLen &&
+                     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal) &&
+                     document.getElementById('interviewStatus').value !== 'Rejected';
 
-        // 2. Soft Rule Checking [cite: 80-84]
-        const ageVal = document.getElementById('age').value;
-        const gradVal = document.getElementById('gradYear').value;
-        const scoreVal = document.getElementById('score').value;
-        const testVal = document.getElementById('testScore').value;
+        // Soft Checks [cite: 81-84]
+        const age = document.getElementById('age').value;
+        const grad = document.getElementById('gradYear').value;
+        const score = document.getElementById('score').value;
+        const test = document.getElementById('testScore').value;
 
-        if (ageVal && !SOFT_RULES.age(ageVal)) softViolations++;
-        if (gradVal && !SOFT_RULES.gradYear(gradVal)) softViolations++;
-        if (scoreVal && !SOFT_RULES.score(scoreVal)) softViolations++;
-        if (testVal && !SOFT_RULES.testScore(testVal)) softViolations++;
+        if (age && (age < APP_CONFIG.soft.minAge || age > APP_CONFIG.soft.maxAge)) softViolations++;
+        if (grad && (grad < APP_CONFIG.soft.startYear || grad > APP_CONFIG.soft.endYear)) softViolations++;
+        if (score && score < APP_CONFIG.soft.minScore && score < 6.0) softViolations++;
+        if (test && test < APP_CONFIG.soft.minTest) softViolations++;
 
-        // 3. Exception Logic [cite: 85-90]
-        const warningBox = document.getElementById('warningBox');
-        const exceptionSection = document.getElementById('exceptionSection');
-        const managerFlag = document.getElementById('managerFlag');
+        const exceptionToggle = document.getElementById('requestException');
+        const rationale = document.getElementById('rationale').value;
+        const hasKeyword = APP_CONFIG.rationale.keywords.some(k => rationale.toLowerCase().includes(k));
+        const isRationaleValid = rationale.length >= APP_CONFIG.rationale.minLen && hasKeyword;
 
         if (softViolations > 0) {
-            warningBox.style.display = 'block';
-            exceptionSection.style.display = 'block';
-            managerFlag.style.display = softViolations > 2 ? 'block' : 'none';
-
-            // Validate rationale 
-            const rationaleText = rationaleInput.value.toLowerCase();
-            const hasKeyword = KEYWORDS.some(k => rationaleText.includes(k));
-            const isRationaleValid = rationaleInput.value.length >= 30 && hasKeyword;
-
+            document.getElementById('warningBox').style.display = 'block';
+            document.getElementById('exceptionSection').style.display = 'block';
+            document.getElementById('managerFlag').style.display = softViolations > 2 ? 'block' : 'none';
             submitBtn.disabled = !(strictPass && exceptionToggle.checked && isRationaleValid);
         } else {
-            warningBox.style.display = 'none';
-            exceptionSection.style.display = 'none';
+            document.getElementById('warningBox').style.display = 'none';
+            document.getElementById('exceptionSection').style.display = 'none';
             submitBtn.disabled = !strictPass;
         }
 
-        // Offer Letter Logic [cite: 78]
-        offerCheckbox.disabled = interviewDropdown.value !== 'Cleared';
-        if (offerCheckbox.disabled) offerCheckbox.checked = false;
+        document.getElementById('offerLetter').disabled = document.getElementById('interviewStatus').value !== 'Cleared';
+    }
+
+    // Audit Log Persistence [cite: 66-67, 199]
+    submitBtn.onclick = () => {
+        const entry = {
+            name: document.getElementById('fullName').value,
+            time: new Date().toLocaleTimeString(),
+            flagged: document.getElementById('managerFlag').style.display === 'block' ? "YES" : "NO",
+            status: "Submitted"
+        };
+        const logs = JSON.parse(localStorage.getItem('admitGuardLogs') || '[]');
+        logs.unshift(entry);
+        localStorage.setItem('admitGuardLogs', JSON.stringify(logs.slice(0, 3)));
+        
+        document.getElementById('successBanner').style.display = 'block';
+        setTimeout(() => { location.reload(); }, 2000);
+    };
+
+    function loadAudit() {
+        const logs = JSON.parse(localStorage.getItem('admitGuardLogs') || '[]');
+        auditLogDiv.innerHTML = logs.map(l => `<div class="audit-item"><strong>${l.time}</strong>: ${l.name} | Flagged: ${l.flagged}</div>`).join('');
     }
 
     form.addEventListener('input', validateForm);
-    interviewDropdown.addEventListener('change', validateForm);
+    document.getElementById('interviewStatus').onchange = validateForm;
+    loadAudit();
     validateForm();
 </script>
-
 </body>
 </html>
