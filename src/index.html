@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AdmitGuard PRO - Triage & Export Suite</title>
+    <title>AdmitGuard PRO - Secure Institutional Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
         :root {
             --primary-blue: #1d4ed8; 
@@ -19,6 +20,11 @@
 
         * { box-sizing: border-box; transition: all 0.2s ease-in-out; }
         body { font-family: 'Inter', sans-serif; background: var(--bg-gradient); color: var(--text-dark); margin: 0; min-height: 100vh; }
+
+        /* SECURITY MODAL */
+        #otpModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center; backdrop-filter: blur(10px); }
+        .modal-content { background: white; padding: 2.5rem; border-radius: 20px; width: 400px; text-align: center; box-shadow: var(--shadow); border: 1px solid var(--border); }
+        .otp-input { font-size: 2.5rem; letter-spacing: 8px; text-align: center; border: 2px solid var(--border); margin: 1.5rem 0; border-radius: 12px; width: 100%; font-weight: 700; color: var(--primary-blue); }
 
         .role-header { background: #1e293b; color: white; padding: 0.8rem 2rem; display: flex; justify-content: space-between; align-items: center; position: sticky; top:0; z-index: 1100; }
         .role-selector select { background: #334155; color: white; border: 1px solid #475569; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; }
@@ -38,8 +44,6 @@
         input.strict-err, select.strict-err { border-color: var(--error) !important; background-color: #fff1f2; }
         input.soft-err, select.soft-err { border-color: var(--warning) !important; background-color: #fffbeb; }
         .err-msg { font-size: 0.75rem; font-weight: 600; margin-top: 4px; display: none; }
-        .strict-msg { color: var(--error); }
-        .soft-msg { color: #b45309; }
 
         .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2rem; }
         .stat-card { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: var(--shadow); border-top: 4px solid var(--primary-blue); text-align: center; }
@@ -52,16 +56,17 @@
         input, select, textarea { padding: 0.8rem; border: 2px solid var(--border); border-radius: 8px; font-size: 0.95rem; background: #fcfdfe; width: 100%; }
         
         .banner { padding: 1rem; border-radius: 8px; font-weight: 600; margin-bottom: 1rem; display: none; text-align: center; font-size: 0.9rem; }
-        .banner-error { background: #fee2e2; color: var(--error); border: 1px solid #fecaca; }
         .banner-success { background: #f0fdf4; color: var(--success); border: 1px solid #bbf7d0; }
 
         /* Audit Components */
         .audit-item { background: white; margin-bottom: 1rem; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; }
-        .audit-header { padding: 1.2rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .audit-header { padding: 1.2rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: background 0.2s; }
+        .audit-header:hover { background: #f8fafc; }
         .audit-details { display: none; padding: 1.5rem; background: #f8fafc; border-top: 1px solid var(--border); }
+        
         .data-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
         .data-point { background: white; padding: 10px; border-radius: 8px; border: 1px solid #eee; }
-        .data-point b { font-size: 0.7rem; color: #64748b; text-transform: uppercase; display: block; }
+        .data-point b { font-size: 0.7rem; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 2px; }
 
         .pill { padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
         .pill-flag { background: #fee2e2; color: var(--error); }
@@ -69,8 +74,6 @@
         .pill-director { background: #dbeafe; color: var(--primary-blue); }
 
         .btn-csv { background: #0f172a; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 0.85rem; margin-bottom: 1rem; }
-        .btn-csv:hover { background: #1e293b; }
-
         .action-bar { display: flex; gap: 10px; margin-top: 1rem; border-top: 1px dashed #cbd5e1; padding-top: 1rem; }
         .btn-approve { background: var(--primary-blue); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 700; flex: 2; }
         .btn-edit { background: #334155; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 700; flex: 1; }
@@ -81,11 +84,22 @@
 </head>
 <body data-role="officer">
 
+<div id="otpModal">
+    <div class="modal-content">
+        <h2 style="margin: 0 0 10px 0;">Director Verification</h2>
+        <p style="color: #64748b; font-size: 0.85rem;">Secure OTP sent to institutional Gmail: <br><strong>sanmukhyadav31@gmail.com</strong></p>
+        <div id="loadingStatus" style="display:none; color: var(--primary-blue); font-weight: 600; margin: 10px 0;">Connecting to SMTP...</div>
+        <input type="text" id="otpInput" class="otp-input" maxlength="4" placeholder="0000">
+        <button class="main-submit" onclick="verifyGmailOTP()">Verify & Grant Access</button>
+        <button style="background:none; border:none; color:var(--error); cursor:pointer; margin-top:1rem; font-weight: 600;" onclick="cancelAuth()">Cancel Login</button>
+    </div>
+</div>
+
 <div class="role-header">
     <div><strong>ADMITGUARD PRO</strong> | <span id="activeRole">Admissions Officer</span></div>
     <div class="role-selector">
-        Authority: 
-        <select onchange="updateAuthority(this.value)">
+        Authority Level: 
+        <select id="authSelect" onchange="initAuth(this.value)">
             <option value="officer">Admissions Officer</option>
             <option value="manager">Admissions Director</option>
         </select>
@@ -105,7 +119,7 @@
             <div class="stat-card" style="border-top-color: var(--success);"><span class="stat-value" id="s-accept">0</span><span class="stat-label">Finalized/Auto-Approved</span></div>
             <div class="stat-card admin-only" style="border-top-color: var(--error);"><span class="stat-value" id="s-flag">0</span><span class="stat-label">Pending Director Flags</span></div>
         </div>
-        <div class="card" style="text-align: center;"><p>Institutional Data Integrity Secured. Records are immutable once finalized.</p></div>
+        <div class="card" style="text-align: center;"><p>Institutional Security Active. Triage logic automatically finalizes compliant entries.</p></div>
     </div>
 
     <div id="form" class="view">
@@ -113,10 +127,10 @@
         <div class="card">
             <form id="appForm">
                 <div class="form-grid">
-                    <div class="form-group full-width"><label>Full Name</label><input type="text" id="f-name"><span id="err-f-name" class="err-msg strict-msg">⚠ Invalid Name.</span></div>
-                    <div class="form-group"><label>Email Address</label><input type="email" id="f-email"><span id="err-f-email" class="err-msg strict-msg">⚠ Invalid Email.</span></div>
-                    <div class="form-group"><label>Phone</label><input type="number" id="f-phone"><span id="err-f-phone" class="err-msg strict-msg">⚠ 10 digits required.</span></div>
-                    <div class="form-group"><label>Aadhaar</label><input type="number" id="f-aadhaar"><span id="err-f-aadhaar" class="err-msg strict-msg">⚠ 12 digits required.</span></div>
+                    <div class="form-group full-width"><label>Full Name</label><input type="text" id="f-name"><span id="err-f-name" class="err-msg" style="color:var(--error)">⚠ Invalid Name.</span></div>
+                    <div class="form-group"><label>Email Address</label><input type="email" id="f-email"><span id="err-f-email" class="err-msg" style="color:var(--error)">⚠ Invalid Email Format.</span></div>
+                    <div class="form-group"><label>Phone</label><input type="number" id="f-phone"><span id="err-f-phone" class="err-msg" style="color:var(--error)">⚠ 10 digits required.</span></div>
+                    <div class="form-group"><label>Aadhaar Number</label><input type="number" id="f-aadhaar"><span id="err-f-aadhaar" class="err-msg" style="color:var(--error)">⚠ 12 digits required.</span></div>
                     <div class="form-group">
                         <label>Qualification</label>
                         <select id="f-qual">
@@ -124,11 +138,11 @@
                             <option>B.Tech</option><option>B.E.</option><option>M.Tech</option><option>BCA</option><option>MCA</option>
                         </select>
                     </div>
-                    <div class="form-group"><label>Work Experience (Yrs)</label><input type="number" id="f-exp"><span id="err-f-exp" class="err-msg soft-msg">⚠ Warning: Below 2 yrs.</span></div>
-                    <div class="form-group"><label>Age</label><input type="number" id="f-age"><span id="err-f-age" class="err-msg soft-msg">⚠ Warning: Outside 18-35.</span></div>
-                    <div class="form-group"><label>Graduation Year</label><input type="number" id="f-grad"><span id="err-f-grad" class="err-msg soft-msg">⚠ Warning: Outside 2015-2025.</span></div>
-                    <div class="form-group"><label>Academic Score (%)</label><input type="number" id="f-score"><span id="err-f-score" class="err-msg soft-msg">⚠ Warning: Below 60%.</span></div>
-                    <div class="form-group"><label>Screening Test Score</label><input type="number" id="f-test"><span id="err-f-test" class="err-msg soft-msg">⚠ Warning: Below 40.</span></div>
+                    <div class="form-group"><label>Work Experience (Yrs)</label><input type="number" id="f-exp" placeholder="Policy: 2+ years"><span id="err-f-exp" class="err-msg" style="color:#b45309">⚠ Policy Warning: Below 2 years.</span></div>
+                    <div class="form-group"><label>Age</label><input type="number" id="f-age" placeholder="Policy: 18-35"><span id="err-f-age" class="err-msg" style="color:#b45309">⚠ Policy Warning: Outside 18-35.</span></div>
+                    <div class="form-group"><label>Graduation Year</label><input type="number" id="f-grad"><span id="err-f-grad" class="err-msg" style="color:#b45309">⚠ Policy Warning: Outside 2015-2025.</span></div>
+                    <div class="form-group"><label>Academic Score (%)</label><input type="number" step="0.01" id="f-score"><span id="err-f-score" class="err-msg" style="color:#b45309">⚠ Policy Warning: Below 60%.</span></div>
+                    <div class="form-group"><label>Screening Test Score</label><input type="number" id="f-test"><span id="err-f-test" class="err-msg" style="color:#b45309">⚠ Policy Warning: Below 40.</span></div>
                     <div class="form-group full-width">
                         <label>Interview Outcome</label>
                         <select id="f-status">
@@ -137,7 +151,7 @@
                             <option value="Rejected">Rejected</option>
                         </select>
                     </div>
-                    <div class="form-group full-width"><label>Officer's Rationale</label><textarea id="f-rat" rows="2"></textarea><span id="err-f-rat" class="err-msg strict-msg">⚠ Required for exceptions (30 chars).</span></div>
+                    <div class="form-group full-width"><label>Officer's Rationale</label><textarea id="f-rat" rows="2" placeholder="Required for policy exceptions (min 30 chars)."></textarea><span id="err-f-rat" class="err-msg" style="color:var(--error)">⚠ Required: 30 chars + keyword.</span></div>
                 </div>
                 <button type="button" id="submitBtn" onclick="saveRecord()" class="main-submit" disabled>Submit to Compliance Log</button>
             </form>
@@ -154,20 +168,68 @@
 </div>
 
 <script>
+    // --- PART A: CONFIG & GMAIL AUTH ---
+    const DIRECTOR_CONFIG = {
+        email: "sanmukhyadav31@gmail.com", 
+        serviceID: "service_wv0e37a", 
+        templateID: "template_2xdmofr", 
+        publicKey: "JPgdYZsHxVGP49Zu2" 
+    };
+
+    emailjs.init(DIRECTOR_CONFIG.publicKey);
+
+    let generatedOTP = null;
+    let role = 'officer';
+
+    function initAuth(val) {
+        if (val === 'manager') {
+            generatedOTP = Math.floor(1000 + Math.random() * 9000).toString();
+            document.getElementById('otpModal').style.display = 'flex';
+            document.getElementById('loadingStatus').style.display = 'block';
+            document.getElementById('loadingStatus').innerText = "Connecting to Gmail SMTP...";
+            
+            emailjs.send(DIRECTOR_CONFIG.serviceID, DIRECTOR_CONFIG.templateID, {
+                to_email: DIRECTOR_CONFIG.email,
+                otp: generatedOTP
+            }).then(() => {
+                document.getElementById('loadingStatus').innerText = "OTP Sent! Check your Inbox.";
+                console.log("DEMO OTP:", generatedOTP);
+            }, (error) => {
+                console.error("Auth Error:", error);
+                alert("Gmail Connection Error: " + error.text + "\nFalling back to Demo Mode. OTP is: " + generatedOTP);
+            });
+        } else {
+            role = 'officer';
+            document.body.dataset.role = 'officer';
+            document.getElementById('activeRole').innerText = 'Admissions Officer';
+            render();
+        }
+    }
+
+    function verifyGmailOTP() {
+        if (document.getElementById('otpInput').value === generatedOTP) {
+            role = 'manager';
+            document.body.dataset.role = 'manager';
+            document.getElementById('activeRole').innerText = 'Admissions Director';
+            document.getElementById('otpModal').style.display = 'none';
+            document.getElementById('otpInput').value = "";
+            render();
+        } else {
+            alert("Verification Failed: Invalid Code.");
+        }
+    }
+
+    function cancelAuth() {
+        document.getElementById('otpModal').style.display = 'none';
+        document.getElementById('authSelect').value = 'officer';
+    }
+
+    // --- PART B: CORE LOGIC & TRIAGE ---
     const CONFIG = {
         strict: { phone: /^[6-9]\d{9}$/, email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, aadhaar: 12 },
         soft: { minAge: 18, maxAge: 35, start: 2015, end: 2025, minPct: 60, minTest: 40, minExp: 2 },
         keywords: ["approved by", "special case", "documentation pending", "waiver granted"]
     };
-
-    let role = 'officer';
-
-    function updateAuthority(val) {
-        role = val;
-        document.body.dataset.role = val;
-        document.getElementById('activeRole').innerText = val === 'officer' ? 'Admissions Officer' : 'Admissions Director';
-        render();
-    }
 
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.onclick = () => {
@@ -178,13 +240,11 @@
         };
     });
 
-    // Validation
     function validateField(id) {
         const el = document.getElementById(id);
         const val = el.value.trim();
         const msg = document.getElementById('err-' + id);
         let isStrict = false; let isSoft = false;
-
         if (val !== "") {
             if (id === 'f-email') isStrict = !CONFIG.strict.email.test(val);
             if (id === 'f-phone') isStrict = !CONFIG.strict.phone.test(val);
@@ -197,23 +257,11 @@
             if (id === 'f-exp') isSoft = val < CONFIG.soft.minExp;
             if (id === 'f-rat') isStrict = val.length < 30 || !CONFIG.keywords.some(k => val.toLowerCase().includes(k));
         }
-
-        el.classList.toggle('strict-err', isStrict);
-        el.classList.toggle('soft-err', isSoft);
+        el.classList.toggle('strict-err', isStrict); el.classList.toggle('soft-err', isSoft);
         if (msg) msg.style.display = (isStrict || isSoft) ? 'block' : 'none';
-
-        checkForm();
-    }
-
-    function checkForm() {
-        const softs = document.querySelectorAll('.soft-err').length;
-        const stricts = document.querySelectorAll('.strict-err').length;
-        const nameVal = document.getElementById('f-name').value;
-        const aadhaarVal = document.getElementById('f-aadhaar').value;
-        const rat = document.getElementById('f-rat').value;
-        const ratOk = rat.length >= 30 && CONFIG.keywords.some(k => rat.toLowerCase().includes(k));
-
-        const canSubmit = nameVal.length >= 2 && aadhaarVal.length === 12 && stricts === 0 && (softs === 0 || ratOk);
+        
+        const ratOk = document.getElementById('f-rat').value.length >= 30 && CONFIG.keywords.some(k => document.getElementById('f-rat').value.toLowerCase().includes(k));
+        const canSubmit = document.getElementById('f-name').value.length >= 2 && document.querySelectorAll('.strict-err').length === 0 && (document.querySelectorAll('.soft-err').length === 0 || ratOk);
         document.getElementById('submitBtn').disabled = !canSubmit;
     }
 
@@ -222,12 +270,8 @@
     });
 
     function saveRecord() {
-        const db = JSON.parse(localStorage.getItem('ADMITGUARD_V6') || '[]');
+        const db = JSON.parse(localStorage.getItem('ADMITMASTER_PRO_FINAL') || '[]');
         const softCount = document.querySelectorAll('.soft-err').length;
-        
-        // TRIAGE LOGIC
-        const hasViolations = softCount > 0;
-
         const record = {
             id: Date.now(),
             name: document.getElementById('f-name').value,
@@ -242,98 +286,75 @@
             test: document.getElementById('f-test').value,
             status: document.getElementById('f-status').value,
             rat: document.getElementById('f-rat').value,
-            isFlagged: hasViolations, // TRUE if any yellow fields
-            isApproved: !hasViolations, // AUTO-APPROVE if clean
+            isFlagged: softCount > 0,
+            isApproved: softCount === 0, 
             timestamp: new Date().toLocaleString()
         };
         db.unshift(record);
-        localStorage.setItem('ADMITGUARD_V6', JSON.stringify(db));
+        localStorage.setItem('ADMITMASTER_PRO_FINAL', JSON.stringify(db));
         document.getElementById('formBanner').style.display = 'block';
         setTimeout(() => location.reload(), 1000);
     }
 
     function directorEdit(id) {
-        let db = JSON.parse(localStorage.getItem('ADMITGUARD_V6') || '[]');
-        const rec = db.find(r => r.id === id);
-        const newScore = prompt("Modify Score (%)", rec.score);
-        const newStatus = prompt("Modify Status (Pending/Cleared/Rejected)", rec.status);
-        if (newScore !== null && newStatus !== null) {
-            rec.score = newScore; rec.status = newStatus;
-            localStorage.setItem('ADMITGUARD_V6', JSON.stringify(db));
-            render();
-        }
+        let db = JSON.parse(localStorage.getItem('ADMITMASTER_PRO_FINAL') || '[]');
+        const r = db.find(x => x.id === id);
+        const s = prompt("Modify Score (%)", r.score);
+        if (s !== null) { r.score = s; localStorage.setItem('ADMITMASTER_PRO_FINAL', JSON.stringify(db)); render(); }
     }
 
     function directorApprove(id) {
-        let db = JSON.parse(localStorage.getItem('ADMITGUARD_V6') || '[]');
-        const rec = db.find(r => r.id === id);
-        rec.isApproved = true; 
-        rec.isFlagged = false; // Resolved
-        localStorage.setItem('ADMITGUARD_V6', JSON.stringify(db));
+        let db = JSON.parse(localStorage.getItem('ADMITMASTER_PRO_FINAL') || '[]');
+        const r = db.find(x => x.id === id);
+        r.isApproved = true; r.isFlagged = false;
+        localStorage.setItem('ADMITMASTER_PRO_FINAL', JSON.stringify(db));
         render();
     }
 
-    // CSV EXPORT ENGINE
     function exportToCSV() {
-        const db = JSON.parse(localStorage.getItem('ADMITGUARD_V6') || '[]');
-        if (db.length === 0) return alert("No data to export.");
-
-        let csv = "Timestamp,Name,Email,Phone,Aadhaar,Qualification,Experience,Age,Score,Status,Rationale,Approval\n";
+        const db = JSON.parse(localStorage.getItem('ADMITMASTER_PRO_FINAL') || '[]');
+        let csv = "Name,Aadhaar,Experience,Score,Status,Audit\n";
         db.forEach(r => {
-            const approvalStatus = r.isApproved ? (r.isFlagged ? "Director Approved" : "Auto-Approved") : "Pending";
-            csv += `"${r.timestamp}","${r.name}","${r.email}","${r.phone}","${r.aadhaar}","${r.qual}","${r.exp}","${r.age}","${r.score}","${r.status}","${r.rat.replace(/"/g, '""')}","${approvalStatus}"\n`;
+            const apr = r.isApproved ? (r.isFlagged ? "Director_Auth" : "Auto_Approved") : "Pending";
+            csv += `"${r.name}","${r.aadhaar}","${r.exp}","${r.score}","${r.status}","${apr}"\n`;
         });
-
         const blob = new Blob([csv], { type: 'text/csv' });
         const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.setAttribute('href', url);
-        a.setAttribute('download', `AdmitGuard_Export_${Date.now()}.csv`);
-        a.click();
+        const a = document.createElement('a'); a.href = url; a.download = `Institutional_Registry.csv`; a.click();
     }
 
     function render() {
-        const db = JSON.parse(localStorage.getItem('ADMITGUARD_V6') || '[]');
+        const db = JSON.parse(localStorage.getItem('ADMITMASTER_PRO_FINAL') || '[]');
         document.getElementById('s-total').innerText = db.length;
         document.getElementById('s-flag').innerText = db.filter(r => r.isFlagged).length;
         document.getElementById('s-accept').innerText = db.filter(r => r.isApproved).length;
-
         const container = document.getElementById('audit-list');
         if (!container) return;
-
         container.innerHTML = db.map(r => `
             <div class="audit-item">
                 <div class="audit-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'block' ? 'none' : 'block'">
                     <span><strong>${r.name}</strong> <small style="margin-left:10px">${r.timestamp}</small></span>
                     <span class="pill ${r.isApproved ? (r.isFlagged ? 'pill-director' : 'pill-clean') : 'pill-flag'}">
-                        ${r.isApproved ? (r.isFlagged ? 'Director Action' : 'Auto-Approved') : 'Pending Approval'}
+                        ${r.isApproved ? (r.isFlagged ? 'Accepted by Director' : 'Auto-Approved') : 'Pending Approval'}
                     </span>
                 </div>
                 <div class="audit-details">
                     <div class="data-grid">
-                        <div class="data-point"><b>Email</b>${r.email || 'N/A'}</div>
-                        <div class="data-point"><b>Phone</b>${r.phone || 'N/A'}</div>
-                        <div class="data-point"><b>Aadhaar</b>${r.aadhaar || 'N/A'}</div>
-                        <div class="data-point"><b>Qualification</b>${r.qual}</div>
-                        <div class="data-point"><b>Experience</b>${r.exp} Yrs</div>
-                        <div class="data-point"><b>Age</b>${r.age}</div>
-                        <div class="data-point"><b>Grad Year</b>${r.grad}</div>
-                        <div class="data-point"><b>Score (%)</b>${r.score}</div>
-                        <div class="data-point"><b>Test Score</b>${r.test}</div>
-                        <div class="data-point"><b>Status</b>${r.status}</div>
-                        <div class="data-point" style="grid-column: span 2"><b>Rationale</b>${r.rat || 'None'}</div>
+                        <div class="data-point"><b>Email</b>${r.email}</div><div class="data-point"><b>Phone</b>${r.phone}</div><div class="data-point"><b>Aadhaar</b>${r.aadhaar}</div>
+                        <div class="data-point"><b>Qual</b>${r.qual}</div><div class="data-point"><b>Exp</b>${r.exp} Yrs</div><div class="data-point"><b>Score</b>${r.score}%</div>
+                        <div class="data-point"><b>Age</b>${r.age}</div><div class="data-point"><b>Grad</b>${r.grad}</div><div class="data-point"><b>Test</b>${r.test}</div>
+                        <div class="data-point" style="grid-column: span 3"><b>Rationale</b>${r.rat || 'N/A'}</div>
                     </div>
-                    ${(role === 'manager' && !r.isApproved) ? `
+                    ${role === 'manager' ? `
                         <div class="action-bar">
                             <button class="btn-edit" onclick="directorEdit(${r.id})">✏️ Edit Details</button>
-                            <button class="btn-approve" onclick="directorApprove(${r.id})">✅ Approve Exception</button>
+                            ${!r.isApproved ? `<button class="btn-approve" onclick="directorApprove(${r.id})">✅ Approve Exception</button>` : ''}
                         </div>
-                    ` : (role === 'manager' ? `<div class="action-bar"><button class="btn-edit" onclick="directorEdit(${r.id})">✏️ Edit Record</button></div>` : '')}
+                    ` : ''}
                 </div>
             </div>
         `).join('');
     }
-
     window.onload = render;
 </script>
 </body>
